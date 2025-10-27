@@ -112,12 +112,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: '1px solid #f0f0f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                // Bỏ shadow, thay bằng border tinh tế
+                borderBottom: '1px solid var(--border-color-light)',
+                boxShadow: 'none'
             }}
         >
             {/* Logo/Brand Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
                 <img
                     src="/logo.svg"
                     alt="Smart Farm"
@@ -126,10 +127,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                         e.currentTarget.style.display = 'none';
                     }}
                 />
-                <span style={{
+                <span className="gradient-text" style={{
                     fontSize: '18px',
                     fontWeight: '600',
-                    color: '#667eea',
                     letterSpacing: '0.5px'
                 }}>
                     Smart Farm IoT

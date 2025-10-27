@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space } from 'antd';
-import { Thermometer, Droplet, Sun, Wifi, BarChart3, Beaker } from 'lucide-react';
+import { Thermometer, Droplet, Sun, Wifi, BarChart3, Beaker, Leaf } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -17,13 +17,53 @@ import type { SensorDataMessage } from '../types/websocket';
 import { getAuthToken } from '../utils/auth';
 import { Empty } from 'antd';
 
+
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const StatsCard = React.memo<{ title: string; value: number; icon: React.ReactNode; suffix?: string; precision?: number }>(
-    ({ title, value, icon, suffix, precision }) => (
-        <Card hoverable style={{ height: '100%' }}>
-            <Statistic title={title} value={value} precision={precision} prefix={icon} suffix={suffix} />
+// ✅ THIẾT KẾ LẠI STATS CARD
+const StatsCard = React.memo<{ title: string; value: number | string; icon: React.ReactNode; color: string; suffix?: string; precision?: number }>(
+    ({ title, value, icon, color, suffix, precision }) => (
+        <Card
+            hoverable
+            style={{
+                height: '100%',
+                borderRadius: 12,
+                overflow: 'hidden',
+                position: 'relative',
+                border: 'none',
+            }}
+            bodyStyle={{ padding: 0 }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', padding: '20px' }}>
+                <div style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: color,
+                    color: '#fff',
+                    marginRight: 16,
+                    flexShrink: 0,
+                }}>
+                    {icon}
+                </div>
+                <div>
+                    <Text style={{ color: 'var(--text-color-secondary-light)', fontSize: 14 }}>{title}</Text>
+                    <Title level={4} style={{ margin: 0, marginTop: 4, color: 'var(--text-color-light)' }}>
+                        <Statistic
+                            value={value}
+                            precision={precision}
+                            suffix={suffix}
+                            valueStyle={{ fontSize: 22, color: 'inherit' }}
+                        />
+                    </Title>
+                </div>
+            </div>
+            {/* Dải màu trang trí */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: color }} />
         </Card>
     )
 );
@@ -203,14 +243,15 @@ const DashboardPage: React.FC = () => {
     }, []);
 
     // JSX và các phần còn lại giữ nguyên...
+    // ✅ CẬP NHẬT STATS CARDS VỚI DESIGN MỚI
     const statsCards = useMemo(() => (
-        <Row gutter={[16, 16]}>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi color="green" size={20} />} suffix={`/ ${summary?.totalDevices ?? 0}`} /></Col>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Nhiệt độ TB" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer color="#ff4d4f" size={20} />} suffix="°C" /></Col>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} icon={<Droplet color="#1677ff" size={20} />} suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} icon={<BarChart3 color="#82ca9d" size={20} />} suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker color="#ffc658" size={20} />} /></Col>
-            <Col xs={12} sm={12} md={8} lg={12} xl={8}><StatsCard title="Ánh sáng TB" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun color="#faad14" size={20} />} suffix=" lux" /></Col>
+        <Row gutter={[24, 24]}>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi size={24} />} color="#10b981" suffix={` / ${summary?.totalDevices ?? 0}`} /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Nhiệt độ TB" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer size={24} />} color="#ef4444" suffix="°C" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} icon={<Droplet size={24} />} color="#3b82f6" suffix="%" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} icon={<Leaf size={24} />} color="#84cc16" suffix="%" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker size={24} />} color="#f59e0b" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Ánh sáng TB" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun size={24} />} color="#f97316" suffix=" lux" /></Col>
         </Row>
     ), [summary]);
 
@@ -249,11 +290,24 @@ const DashboardPage: React.FC = () => {
     if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: '20px' }} />;
 
     return (
-        <div style={{ padding: '24px' }}>
-            <Title level={2} style={{ marginBottom: '24px' }}>Dashboard Tổng Quan</Title>
-            <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>{statsCards}<Card style={{ marginTop: '24px' }}><Tabs defaultActiveKey="env" onChange={handleTabChange} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' },]} />{chartComponent}</Card></Col>
-                <Col xs={24} lg={8}><WeatherWidget /></Col>
+        <div>
+            {/* Thay thế Title cũ bằng Page Header */}
+            <div style={{ marginBottom: 24 }}>
+                <Title level={2} style={{ margin: 0 }}>Dashboard Tổng Quan</Title>
+                <Text type="secondary">Phân tích dữ liệu thời gian thực từ các cảm biến.</Text>
+            </div>
+
+            <Row gutter={[24, 24]}>
+                <Col xs={24} lg={16}>
+                    {statsCards}
+                    <Card style={{ marginTop: '24px', borderRadius: 12 }}>
+                        <Tabs defaultActiveKey="env" onChange={handleTabChange} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' },]} />
+                        {chartComponent}
+                    </Card>
+                </Col>
+                <Col xs={24} lg={8}>
+                    <WeatherWidget />
+                </Col>
             </Row>
         </div>
     );

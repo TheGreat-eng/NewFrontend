@@ -1,0 +1,81 @@
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #667eea;
+    --primary-color-dark: #5a6ed8;
+    --secondary-color: #764ba2;
+    --background-color-light: #f7f8fc;
+    --background-color-dark: #141414;
+    --card-background-light: #ffffff;
+    --card-background-dark: #1d1d1d;
+    --text-color-light: #1f2937;
+    --text-color-dark: #e5e7eb;
+    --text-color-secondary-light: #6b7280;
+    --text-color-secondary-dark: #9ca3af;
+    --border-color-light: #e5e7eb;
+    --border-color-dark: #303030;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+
+    --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+body {
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body[data-theme='light'] {
+    background-color: var(--background-color-light);
+}
+
+body[data-theme='dark'] {
+    background-color: var(--background-color-dark);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+
+body[data-theme='dark'] ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+body[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Gradient text */
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+}
+
+/* Subtle background pattern for login page */
+.auth-background {
+    background-color: #667eea;
+    background-image:
+        linear-gradient(135deg, #667eea 0%, #764ba2 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h16a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1z'/%3E%3Cpath d='M6 6h4v4H6V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zM6 15h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 24h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 33h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 42h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 51h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 60h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 69h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 78h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 87h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}

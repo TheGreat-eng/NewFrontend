@@ -81,19 +81,26 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div style={{
+        <div className="auth-background" style={{ // Sử dụng class từ index.css
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         }}>
-            <Card style={{ width: 400, boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
+            <Card style={{
+                width: 400,
+                borderRadius: '12px',
+                // Hiệu ứng glassmorphism
+                background: 'rgba(255, 255, 255, 0.2)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
+            }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ color: '#667eea', marginBottom: '8px' }}>
+                    <Title level={2} style={{ color: '#fff', marginBottom: '8px' }}>
                         Smart Farm IoT
                     </Title>
-                    <Text type="secondary">Đăng nhập để tiếp tục</Text>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Đăng nhập để tiếp tục</Text>
                 </div>
 
                 <Form name="login" onFinish={onFinish} autoComplete="off" size="large">
@@ -121,18 +128,21 @@ const LoginPage: React.FC = () => {
                             loading={loading}
                             block
                             style={{
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                background: 'linear-gradient(135deg, #ffffff 0%, #e6e9ff 100%)',
                                 border: 'none',
-                                height: '40px'
+                                height: '40px',
+                                color: '#667eea', // Màu chữ
+                                fontWeight: '600'
                             }}
                         >
                             Đăng nhập
                         </Button>
                     </Form.Item>
 
+
                     <div style={{ textAlign: 'center' }}>
-                        <Text type="secondary">
-                            Chưa có tài khoản? <a onClick={() => navigate('/register')}>Đăng ký ngay</a>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            Chưa có tài khoản? <a onClick={() => navigate('/register')} style={{ color: '#fff', fontWeight: 'bold' }}>Đăng ký ngay</a>
                         </Text>
                     </div>
                 </Form>

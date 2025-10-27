@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Table, Button, Space, Tag, Card, message, Typography, Popconfirm, Modal, Input, Spin, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, ThunderboltOutlined, WifiOutlined as WifiIcon, StopOutlined } from '@ant-design/icons';
 import { getDevicesByFarm, createDevice, updateDevice, deleteDevice, controlDevice } from '../api/deviceService';
 import type { Device } from '../types/device';
 import { useFarm } from '../context/FarmContext';
@@ -163,15 +163,21 @@ const DevicesPage: React.FC = () => {
             message.success(`Đã ${action === 'turn_on' ? 'bật' : 'tắt'} thiết bị ${deviceId}`);
             setTimeout(fetchDevices, 1000);
         } catch (error) {
-            // Rollback
-            const rollbackState = action === 'turn_on' ? DEVICE_STATE.OFF : DEVICE_STATE.ON;
+            // ✅ ROLLBACK AN TOÀN HƠN
             setDevices(prevDevices =>
-                prevDevices.map(d =>
-                    d.deviceId === deviceId
-                        ? { ...d, currentState: rollbackState }
-                        : d
-                )
+                prevDevices.map(d => {
+                    if (d.deviceId === deviceId) {
+                        const rollbackState = action === 'turn_on' ? DEVICE_STATE.OFF : DEVICE_STATE.ON;
+                        // ✅ Giữ lại currentState cũ nếu có, nếu không thì dùng rollbackState
+                        return {
+                            ...d,
+                            currentState: d.currentState !== undefined ? rollbackState : undefined
+                        };
+                    }
+                    return d;
+                })
             );
+            message.error('Không thể điều khiển thiết bị. Vui lòng thử lại.');
         } finally {
             setControllingDevices(prev => {
                 const newSet = new Set(prev);
@@ -217,13 +223,21 @@ const DevicesPage: React.FC = () => {
             key: 'status',
             width: 160,
             render: (_: any, record: Device) => (
-                <Space direction="vertical" size="small">
-                    <Tag color={record.status === DEVICE_STATUS.ONLINE ? 'green' : 'red'}>
-                        {record.status === DEVICE_STATUS.ONLINE ? '🟢 Online' : '🔴 Offline'}
+                <Space direction="vertical" size={4}>
+                    <Tag
+                        icon={record.status === DEVICE_STATUS.ONLINE ? <WifiIcon /> : <StopOutlined />}
+                        color={record.status === DEVICE_STATUS.ONLINE ? 'success' : 'error'}
+                        style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                        {record.status === DEVICE_STATUS.ONLINE ? 'Online' : 'Offline'}
                     </Tag>
-                    {record.type.startsWith('ACTUATOR') && record.currentState && (
-                        <Tag color={record.currentState === DEVICE_STATE.ON ? 'processing' : 'default'}>
-                            {record.currentState === DEVICE_STATE.ON ? '⚡ Đang bật' : '⚪ Đang tắt'}
+                    {/* ✅ KIỂM TRA currentState tồn tại VÀ có giá trị */}
+                    {record.type.startsWith('ACTUATOR') && record.currentState !== undefined && record.currentState !== null && (
+                        <Tag
+                            color={record.currentState === DEVICE_STATE.ON ? 'processing' : 'default'}
+                            style={{ margin: 0 }}
+                        >
+                            {record.currentState === DEVICE_STATE.ON ? 'Đang bật' : 'Đang tắt'}
                         </Tag>
                     )}
                 </Space>
@@ -247,7 +261,9 @@ const DevicesPage: React.FC = () => {
 
                 const isLoading = controllingDevices.has(record.deviceId);
                 const isOffline = record.status === DEVICE_STATUS.OFFLINE;
+                // ✅ XỬ LÝ KHI currentState undefined/null
                 const isOn = record.currentState === DEVICE_STATE.ON;
+                const hasState = record.currentState !== undefined && record.currentState !== null;
 
                 return (
                     <Space direction="vertical" size="small">
@@ -258,6 +274,7 @@ const DevicesPage: React.FC = () => {
                                     size="small"
                                     onClick={() => handleControl(record.deviceId, 'turn_off')}
                                     loading={isLoading}
+                                    disabled={!hasState} // ✅ Disable nếu không có state
                                 >
                                     🔴 Tắt
                                 </Button>
@@ -268,6 +285,7 @@ const DevicesPage: React.FC = () => {
                                     icon={<ThunderboltOutlined />}
                                     onClick={() => handleControl(record.deviceId, 'turn_on')}
                                     loading={isLoading}
+                                    disabled={!hasState && isOffline} // ✅ Cho phép bật nếu offline nhưng có state
                                 >
                                     🟢 Bật
                                 </Button>
@@ -276,6 +294,12 @@ const DevicesPage: React.FC = () => {
                         {isOffline && (
                             <Tag color="warning" style={{ margin: 0, fontSize: '11px' }}>
                                 ⚠️ Offline - lệnh sẽ chờ
+                            </Tag>
+                        )}
+                        {/* ✅ HIỂN THỊ CẢNH BÁO KHI THIẾU STATE */}
+                        {!hasState && record.type.startsWith('ACTUATOR') && (
+                            <Tag color="default" style={{ margin: 0, fontSize: '11px' }}>
+                                ℹ️ Chưa có trạng thái
                             </Tag>
                         )}
                     </Space>

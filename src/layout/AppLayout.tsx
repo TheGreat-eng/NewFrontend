@@ -6,7 +6,7 @@ import {
     SettingOutlined,
     BuildOutlined,
     RobotOutlined,
-    HeartOutlined
+    HeartOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { Layout, Menu, theme } from 'antd';
@@ -43,9 +43,7 @@ const AppLayout: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isDark } = useTheme(); // ✅ THÊM
-    const {
-        token: { colorBgContainer },
-    } = theme.useToken();
+    const { token: { colorBgContainer, colorBgLayout } } = theme.useToken(); // Lấy thêm màu nền layout
 
     // VVVV--- LOGIC TẠO MENU ĐỘNG ---VVVV
     const user = getUserFromStorage();
@@ -73,12 +71,13 @@ const AppLayout: React.FC = () => {
     // ^^^^------------------------------------^^^^
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
+        // Layout chính sử dụng màu nền từ theme
+        <Layout style={{ minHeight: '100vh', background: colorBgLayout }}>
             <Sider
                 collapsible
                 collapsed={collapsed}
                 onCollapse={(value) => setCollapsed(value)}
-                theme={isDark ? 'dark' : 'light'} // ✅ THÊM: Theme động
+                theme={isDark ? 'dark' : 'light'}
                 style={{
                     overflow: 'auto',
                     height: '100vh',
@@ -86,28 +85,34 @@ const AppLayout: React.FC = () => {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    zIndex: 100
+                    zIndex: 100,
+                    borderRight: isDark ? '1px solid #303030' : '1px solid #f0f0f0'
                 }}
             >
                 <div
                     style={{
                         height: 64,
-                        margin: 16,
-                        background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(102, 126, 234, 0.1)', // ✅ THÊM
-                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: isDark ? '#fff' : '#667eea', // ✅ THÊM
-                        fontWeight: 'bold',
-                        fontSize: collapsed ? '12px' : '16px',
-                        transition: 'all 0.2s'
+                        padding: '16px',
                     }}
                 >
-                    {collapsed ? 'SF' : 'Smart Farm'}
+                    {/* Logo cách điệu với gradient */}
+                    <div
+                        className="gradient-text"
+                        style={{
+                            fontWeight: 'bold',
+                            fontSize: collapsed ? '24px' : '20px',
+                            transition: 'all 0.3s',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        {collapsed ? 'SF' : 'Smart Farm'}
+                    </div>
                 </div>
                 <Menu
-                    theme={isDark ? 'dark' : 'light'} // ✅ THÊM
+                    theme={isDark ? 'dark' : 'light'}
                     selectedKeys={[location.pathname]}
                     mode="inline"
                     items={menuItems}
@@ -117,7 +122,8 @@ const AppLayout: React.FC = () => {
 
             <Layout style={{
                 marginLeft: collapsed ? 80 : 200,
-                transition: 'margin-left 0.2s'
+                transition: 'margin-left 0.2s',
+                background: 'transparent' // Để màu nền của layout cha hiển thị
             }}>
                 <div style={{
                     position: 'sticky',
@@ -130,14 +136,16 @@ const AppLayout: React.FC = () => {
 
                 <Content
                     style={{
-                        margin: '16px',
+                        // Tăng padding để "dễ thở" hơn
+                        margin: '24px 16px',
                         padding: 0,
                         minHeight: 280,
-                        background: colorBgContainer,
-                        overflow: 'auto'
+                        overflow: 'initial'
                     }}
                 >
-                    <Outlet />
+                    <div style={{ padding: 24, background: colorBgContainer, borderRadius: 12 }}>
+                        <Outlet />
+                    </div>
                 </Content>
 
                 <AppFooter />
