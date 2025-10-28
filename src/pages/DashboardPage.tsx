@@ -1,9 +1,9 @@
 // src/pages/DashboardPage.tsx
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space } from 'antd';
+import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space, Empty } from 'antd';
 import { Thermometer, Droplet, Sun, Wifi, BarChart3, Beaker, Leaf } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import api from '../api/axiosConfig';
@@ -15,18 +15,12 @@ import type { Device } from '../types/device';
 import { DashboardSkeleton } from '../components/LoadingSkeleton';
 import type { SensorDataMessage } from '../types/websocket';
 import { getAuthToken } from '../utils/auth';
-import { Empty } from 'antd';
-import { motion } from 'framer-motion';
-
-import { Area } from 'recharts'; // Thêm Area
 import { useTheme } from '../context/ThemeContext';
-
-
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// ✅ THIẾT KẾ LẠI STATS CARD THEO PHONG CÁCH MỚI
+// THIẾT KẾ LẠI STATS CARD THEO PHONG CÁCH MỚI
 const StatsCard = React.memo<{ title: string; value: number | string; icon: React.ReactNode; suffix?: string; precision?: number }>(
     ({ title, value, icon, suffix, precision }) => (
         <Card>
@@ -37,6 +31,8 @@ const StatsCard = React.memo<{ title: string; value: number | string; icon: Reac
                         value={value}
                         precision={precision}
                         suffix={suffix}
+                        // ✅ FIX: Bỏ đi thuộc tính `color` cố định.
+                        // Các con số sẽ tự động nhận màu phù hợp với theme (sáng hoặc tối).
                         valueStyle={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}
                     />
                 </div>
@@ -59,12 +55,9 @@ interface AggregatedDataPoint {
     avgValue?: number;
 }
 
-// ✅ TẠO CUSTOM TOOLTIP
+// TẠO CUSTOM TOOLTIP ĐẸP HƠN
 const CustomTooltip = ({ active, payload, label }: any) => {
-
-    // ✅ Dùng useTheme để thay đổi style
     const { isDark } = useTheme();
-
     if (active && payload && payload.length) {
         return (
             <div style={{
@@ -72,12 +65,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 padding: '10px 15px',
                 borderRadius: 'var(--radius)',
                 border: `1px solid ${isDark ? 'var(--border-dark)' : 'var(--border-light)'}`,
-                color: isDark ? 'var(--foreground-dark)' : 'var(--foreground-light)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
             }}>
                 <p style={{ fontWeight: 600, marginBottom: 8 }}>{`Thời gian: ${label}`}</p>
                 {payload.map((pld: any) => (
-                    <div key={pld.dataKey} style={{ color: pld.color, display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+                    <div key={pld.dataKey} style={{ color: pld.stroke, display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
                         <span>{pld.name}:</span>
                         <strong>{`${pld.value.toFixed(1)} ${pld.unit || ''}`}</strong>
                     </div>
@@ -91,7 +83,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const DashboardPage: React.FC = () => {
     const { farmId, isLoadingFarm } = useFarm();
     const navigate = useNavigate();
-
     const [summary, setSummary] = useState<FarmSummary | null>(null);
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [activeChart, setActiveChart] = useState<'env' | 'soil'>('env');
@@ -107,128 +98,82 @@ const DashboardPage: React.FC = () => {
     const soilDevices = useMemo(() => devices.filter(d => d.type === 'SENSOR_SOIL_MOISTURE'), [devices]);
     const phDevices = useMemo(() => devices.filter(d => d.type === 'SENSOR_PH'), [devices]);
 
-    // ✅ THÊM: Reset tất cả state khi farmId thay đổi
     useEffect(() => {
         if (farmId === null) {
-            setSummary(null);
-            setChartData([]);
-            setDevices([]);
-            setSelectedEnvDevice(undefined);
-            setSelectedSoilDevice(undefined);
-            setSelectedPHDevice(undefined);
-            setError(null);
-            setLoading(false);
+            setSummary(null); setChartData([]); setDevices([]);
+            setSelectedEnvDevice(undefined); setSelectedSoilDevice(undefined); setSelectedPHDevice(undefined);
+            setError(null); setLoading(false);
         }
     }, [farmId]);
 
-    // Effect để tải dữ liệu ban đầu
     useEffect(() => {
         let isMounted = true;
         const fetchData = async () => {
-            if (!farmId) {
-                setLoading(false);
-                return;
-            }
-
+            if (!farmId) { setLoading(false); return; }
             try {
                 setLoading(true);
                 const [devicesRes, summaryRes] = await Promise.all([
                     getDevicesByFarm(farmId),
                     api.get<{ data: FarmSummary }>(`/reports/summary?farmId=${farmId}`)
                 ]);
-
                 if (isMounted) {
                     const deviceList = devicesRes.data.data;
-                    setDevices(deviceList);
-                    setSummary(summaryRes.data.data);
-
-                    // Tự động chọn cảm biến nếu chưa có
+                    setDevices(deviceList); setSummary(summaryRes.data.data);
                     if (!selectedEnvDevice) setSelectedEnvDevice(deviceList.find(d => d.type === 'SENSOR_DHT22')?.deviceId);
                     if (!selectedSoilDevice) setSelectedSoilDevice(deviceList.find(d => d.type === 'SENSOR_SOIL_MOISTURE')?.deviceId);
                     if (!selectedPHDevice) setSelectedPHDevice(deviceList.find(d => d.type === 'SENSOR_PH')?.deviceId);
-
                     setError(null);
                 }
-            } catch (err) {
-                if (isMounted) { console.error("Failed to fetch initial data:", err); setError("Không thể tải dữ liệu. Vui lòng thử lại."); }
-            } finally {
-                if (isMounted) setLoading(false);
-            }
+            } catch (err) { if (isMounted) { console.error("Failed to fetch initial data:", err); setError("Không thể tải dữ liệu. Vui lòng thử lại."); } }
+            finally { if (isMounted) setLoading(false); }
         };
         fetchData();
         return () => { isMounted = false; };
     }, [farmId]);
 
-    // ✅ ĐƠN GIẢN HÓA LOGIC FETCH BIỂU ĐỒ
-    const fetchChartData = useCallback(async () => {
-        setChartLoading(true);
-        setChartData([]);
-
-        try {
-            if (activeChart === 'env') {
-                if (!selectedEnvDevice) return;
-                const [tempRes, humidityRes] = await Promise.all([
-                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedEnvDevice}/data/aggregated?field=temperature&window=10m`),
-                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedEnvDevice}/data/aggregated?field=humidity&window=10m`),
-                ]);
-                const merged = mergeChartData(tempRes.data.data, humidityRes.data.data, 'temperature', 'humidity');
-                setChartData(merged);
-            } else if (activeChart === 'soil') {
-                if (!selectedSoilDevice || !selectedPHDevice) return;
-                const [soilMoistureRes, soilPHRes] = await Promise.all([
-                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedSoilDevice}/data/aggregated?field=soil_moisture&window=10m`),
-                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedPHDevice}/data/aggregated?field=soilPH&window=10m`),
-                ]);
-                const merged = mergeChartData(soilMoistureRes.data.data, soilPHRes.data.data, 'soilMoisture', 'soilPH');
-                setChartData(merged);
-            }
-        } catch (err) {
-            console.error(`Failed to fetch chart data:`, err);
-            message.error(`Không thể tải dữ liệu biểu đồ.`);
-        } finally {
-            setChartLoading(false);
-        }
-    }, [activeChart, selectedEnvDevice, selectedSoilDevice, selectedPHDevice]);
-
-    // ✅ HELPER FUNCTION để gộp dữ liệu biểu đồ một cách an toàn
     const mergeChartData = (data1: AggregatedDataPoint[], data2: AggregatedDataPoint[], key1: string, key2: string): ChartDataPoint[] => {
         const dataMap = new Map<string, ChartDataPoint>();
-
         data1.forEach(p => {
             const time = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             dataMap.set(time, { ...dataMap.get(time), time, [key1]: p.avgValue });
         });
-
         data2.forEach(p => {
             const time = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             dataMap.set(time, { ...dataMap.get(time), time, [key2]: p.avgValue });
         });
-
         return Array.from(dataMap.values()).sort((a, b) => a.time.localeCompare(b.time));
     };
 
-    // Effect để gọi fetchChartData khi các dependency thay đổi
-    useEffect(() => {
-        fetchChartData();
-    }, [fetchChartData]);
+    const fetchChartData = useCallback(async () => {
+        setChartLoading(true); setChartData([]);
+        try {
+            if (activeChart === 'env' && selectedEnvDevice) {
+                const [tempRes, humidityRes] = await Promise.all([
+                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedEnvDevice}/data/aggregated?field=temperature&window=10m`),
+                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedEnvDevice}/data/aggregated?field=humidity&window=10m`),
+                ]);
+                setChartData(mergeChartData(tempRes.data.data, humidityRes.data.data, 'temperature', 'humidity'));
+            } else if (activeChart === 'soil' && selectedSoilDevice && selectedPHDevice) {
+                const [soilMoistureRes, soilPHRes] = await Promise.all([
+                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedSoilDevice}/data/aggregated?field=soil_moisture&window=10m`),
+                    api.get<{ data: AggregatedDataPoint[] }>(`/devices/${selectedPHDevice}/data/aggregated?field=soilPH&window=10m`),
+                ]);
+                setChartData(mergeChartData(soilMoistureRes.data.data, soilPHRes.data.data, 'soilMoisture', 'soilPH'));
+            }
+        } catch (err) { console.error(`Failed to fetch chart data:`, err); message.error(`Không thể tải dữ liệu biểu đồ.`); }
+        finally { setChartLoading(false); }
+    }, [activeChart, selectedEnvDevice, selectedSoilDevice, selectedPHDevice]);
 
+    useEffect(() => { fetchChartData(); }, [fetchChartData]);
 
-    // WebSocket useEffect (giữ nguyên, đã hoạt động tốt)
     useEffect(() => {
         if (farmId === null) return;
-        const token = getAuthToken();
-        if (!token) return;
-        //new WebSocket(`${import.meta.env.VITE_WS_URL}/ws`)
+        const token = getAuthToken(); if (!token) return;
         const client = new Client({
             webSocketFactory: () => new SockJS(`${import.meta.env.VITE_WS_URL}`),
-            connectHeaders: { Authorization: `Bearer ${token}` },
-            reconnectDelay: 5000,
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
+            connectHeaders: { Authorization: `Bearer ${token}` }, reconnectDelay: 5000,
         });
-
         client.onConnect = () => {
-            console.log('✅ WebSocket/STOMP Connected!');
             client.subscribe(`/topic/farm/${farmId}/sensor-data`, (msg) => {
                 try {
                     const newData: SensorDataMessage = JSON.parse(msg.body);
@@ -242,26 +187,14 @@ const DashboardPage: React.FC = () => {
                         if (newData.lightIntensity !== undefined) newAvg.avgLightIntensity = newData.lightIntensity;
                         return { ...prev, averageEnvironment: newAvg };
                     });
-                } catch (e) {
-                    console.error("Error processing WebSocket message:", e);
-                }
+                } catch (e) { console.error("Error processing WebSocket message:", e); }
             });
         };
-
-        client.onStompError = (frame) => console.error('STOMP Error:', frame.headers['message'], frame.body);
         client.activate();
         return () => { if (client.active) client.deactivate(); };
     }, [farmId]);
 
-    const handleTabChange = useCallback((key: string) => {
-        setActiveChart(key as 'env' | 'soil');
-    }, []);
-
-    // JSX và các phần còn lại giữ nguyên...
-    // ✅ CẬP NHẬT STATS CARDS VỚI DESIGN MỚI
     const statsCards = useMemo(() => (
-
-
         <Row gutter={[24, 24]}>
             <Col xs={12} sm={12} md={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi size={24} color="#10b981" />} suffix={` / ${summary?.totalDevices ?? 0}`} /></Col>
             <Col xs={12} sm={12} md={8}><StatsCard title="Nhiệt độ" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer size={24} color="#ef4444" />} suffix="°C" /></Col>
@@ -270,65 +203,7 @@ const DashboardPage: React.FC = () => {
             <Col xs={12} sm={12} md={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker size={24} color="#f59e0b" />} /></Col>
             <Col xs={12} sm={12} md={8}><StatsCard title="Ánh sáng" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun size={24} color="#f97316" />} suffix=" lux" /></Col>
         </Row>
-
-
-
-
     ), [summary]);
-
-    const chartComponent = useMemo(() => {
-        const renderChartContent = () => {
-            if (chartLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}><Spin /></div>;
-            if (chartData.length === 0) return <Empty description="Không có dữ liệu biểu đồ" style={{ height: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} />;
-            if (activeChart === 'env') {
-                return (
-                    <ResponsiveContainer width="100%" height={350}>
-                        <LineChart data={chartData}>
-                            <defs>
-                                <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
-                            <XAxis dataKey="time" stroke="var(--muted-foreground-light)" />
-                            <YAxis yAxisId="left" stroke="#ef4444" />
-                            <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Area yAxisId="left" type="monotone" dataKey="temperature" stroke="#ef4444" fillOpacity={1} fill="url(#colorTemp)" />
-                            <Line yAxisId="left" type="monotone" dataKey="temperature" stroke="#ef4444" name="Nhiệt độ" unit="°C" dot={false} strokeWidth={2} />
-                            <Area yAxisId="right" type="monotone" dataKey="humidity" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHumid)" />
-                            <Line yAxisId="right" type="monotone" dataKey="humidity" stroke="#3b82f6" name="Độ ẩm" unit="%" dot={false} strokeWidth={2} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                );
-            }
-            if (activeChart === 'soil') {
-                return <ResponsiveContainer width="100%" height={350}><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis yAxisId="left" stroke="#82ca9d" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" stroke="#ffc658" domain={[4, 9]} /><Tooltip /><Legend /><Line yAxisId="left" type="monotone" dataKey="soilMoisture" stroke="#82ca9d" name="Độ ẩm đất (%)" dot={false} /><Line yAxisId="right" type="monotone" dataKey="soilPH" stroke="#ffc658" name="Độ pH đất" dot={false} /></LineChart></ResponsiveContainer>;
-            }
-            return null;
-        };
-        return (
-            <div>
-                {activeChart === 'env' && (<div style={{ marginBottom: 16 }}><Text style={{ marginRight: 8 }}>Chọn cảm biến môi trường:</Text><Select value={selectedEnvDevice} onChange={setSelectedEnvDevice} style={{ width: 200 }} placeholder="Chọn cảm biến DHT22">{envDevices.map(d => <Option key={d.deviceId} value={d.deviceId}>{d.name} ({d.deviceId})</Option>)}</Select></div>)}
-                {activeChart === 'soil' && (<Space style={{ marginBottom: 16 }} wrap><Text>Cảm biến độ ẩm:</Text><Select value={selectedSoilDevice} onChange={setSelectedSoilDevice} style={{ width: 200 }} placeholder="Chọn cảm biến đất">{soilDevices.map(d => <Option key={d.deviceId} value={d.deviceId}>{d.name} ({d.deviceId})</Option>)}</Select><Text>Cảm biến pH:</Text><Select value={selectedPHDevice} onChange={setSelectedPHDevice} style={{ width: 200 }} placeholder="Chọn cảm biến pH">{phDevices.map(d => <Option key={d.deviceId} value={d.deviceId}>{d.name} ({d.deviceId})</Option>)}</Select></Space>)}
-                {renderChartContent()}
-            </div>
-        );
-    }, [chartData, activeChart, chartLoading, selectedEnvDevice, selectedSoilDevice, selectedPHDevice, envDevices, soilDevices, phDevices]);
-
-    useEffect(() => {
-        // ✅ THÊM: Cleanup function để reset state khi component unmount
-        return () => {
-            setChartData([]);
-            setSummary(null);
-        };
-    }, []);
 
     if (isLoadingFarm) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spin size="large" /></div>;
     if (!farmId) return <Result status="info" title="Chưa có nông trại" subTitle="Vui lòng tạo hoặc chọn nông trại để xem dữ liệu." extra={<Button type="primary" onClick={() => navigate('/farms')}>Quản lý Nông trại</Button>} />;
@@ -336,18 +211,35 @@ const DashboardPage: React.FC = () => {
     if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: '20px' }} />;
 
     return (
-        <div style={{ padding: '0 4px' }}> {/* Thêm padding nhỏ để nội dung không dính sát lề */}
-            <PageHeader
-                title="Dashboard Tổng Quan"
-                subtitle="Phân tích dữ liệu thời gian thực từ các cảm biến."
-            />
-
+        <div>
+            <PageHeader title="Dashboard Tổng Quan" subtitle="Phân tích dữ liệu thời gian thực từ các cảm biến." />
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={16}>
                     {statsCards}
                     <Card style={{ marginTop: 24 }}>
-                        <Tabs defaultActiveKey="env" onChange={handleTabChange} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' }]} />
-                        {chartComponent}
+                        <Tabs defaultActiveKey="env" onChange={(k) => setActiveChart(k as 'env' | 'soil')} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' }]} />
+                        {chartLoading ? (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}><Spin /></div>
+                        ) : chartData.length === 0 ? (
+                            <Empty description="Không có dữ liệu biểu đồ" style={{ height: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} />
+                        ) : (
+                            <ResponsiveContainer width="100%" height={350}>
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} /><stop offset="95%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
+                                        <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
+                                    <XAxis dataKey="time" stroke="var(--muted-foreground-light)" />
+                                    <YAxis yAxisId="left" stroke="#ef4444" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend />
+                                    <Area yAxisId="left" type="monotone" dataKey="temperature" name="Nhiệt độ" unit="°C" stroke="#ef4444" fillOpacity={1} fill="url(#colorTemp)" strokeWidth={2} />
+                                    <Area yAxisId="right" type="monotone" dataKey="humidity" name="Độ ẩm" unit="%" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHumid)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>

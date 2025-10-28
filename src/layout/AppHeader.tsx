@@ -1,39 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Layout, Avatar, Dropdown, Space, Select, Modal, message as antdMessage, type MenuProps, Spin, Button, Tooltip } from 'antd';
-import { UserOutlined, LogoutOutlined, HomeOutlined, SwapOutlined, BulbOutlined, BulbFilled } from '@ant-design/icons'; // ✅ THÊM icons
+import { User, LogOut, Home, ChevronsUpDown, Sun, Moon, Leaf } from 'lucide-react'; // ✅ THÊM Leaf, SỬA icon
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFarm } from '../context/FarmContext';
-import { useTheme } from '../context/ThemeContext'; // ✅ THÊM
+import { useTheme } from '../context/ThemeContext';
 import { getFarms } from '../api/farmService';
 import { clearAuthData, getUserFromToken, getAuthToken } from '../utils/auth';
 import type { Farm } from '../types/farm';
-import GlobalSearch from '../components/GlobalSearch'; // Đảm bảo đã import
-
-
-// VVVV--- THÊM IMPORT NÀY ---VVVV
-import { useQueryClient } from '@tanstack/react-query';
-// ^^^^-----------------------^^^^
+import GlobalSearch from '../components/GlobalSearch';
 
 const { Header } = Layout;
 const { Option } = Select;
 
-interface AppHeaderProps {
-    colorBgContainer?: string;
-}
-
-const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) => {
+const AppHeader: React.FC = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { farmId, setFarmId } = useFarm();
-    const { isDark, toggleTheme } = useTheme(); // ✅ THÊM
+    const { isDark, toggleTheme } = useTheme();
     const [farms, setFarms] = useState<Farm[]>([]);
     const [loadingFarms, setLoadingFarms] = useState(false);
-
-    // VVVV--- LẤY QUERY CLIENT ---VVVV
-    const queryClient = useQueryClient();
-    // ^^^^------------------------^^^^
-
-    const token = getAuthToken();
-    const user = token ? getUserFromToken(token) : null;
+    const user = getUserFromToken(getAuthToken() || '');
 
     useEffect(() => {
         const fetchFarms = async () => {
@@ -54,95 +41,58 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
     const handleLogout = () => {
         Modal.confirm({
             title: 'Xác nhận đăng xuất',
-            content: 'Bạn có chắc muốn đăng xuất?',
+            content: 'Bạn có chắc muốn đăng xuất khỏi hệ thống?',
             okText: 'Đăng xuất',
             cancelText: 'Hủy',
             okButtonProps: { danger: true },
             onOk: () => {
-                // ✅ BƯỚC 1: Reset farmId trong Context
                 setFarmId(null);
-
-                // ✅ BƯỚC 2: Clear React Query cache
                 queryClient.clear();
-                console.log('✅ React Query cache cleared.');
-
-                // ✅ BƯỚC 3: Clear auth data (bao gồm selectedFarmId)
                 clearAuthData();
-
-                // ✅ BƯỚC 4: Hiển thị thông báo
                 antdMessage.success('Đăng xuất thành công!');
-
-                // ✅ BƯỚC 5: Chuyển hướng VÀ FORCE RELOAD
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 300);
+                setTimeout(() => { window.location.href = '/login'; }, 300);
             }
         });
     };
 
     const userMenuItems: MenuProps['items'] = [
-        {
-            key: 'profile',
-            icon: <UserOutlined />,
-            label: 'Thông tin cá nhân',
-            onClick: () => navigate('/profile')
-        },
-        {
-            key: 'change-password',
-            icon: <UserOutlined />,
-            label: 'Đổi mật khẩu',
-            onClick: () => navigate('/change-password')
-        },
-        {
-            type: 'divider'
-        },
-        {
-            key: 'logout',
-            icon: <LogoutOutlined />,
-            label: 'Đăng xuất',
-            danger: true,
-            onClick: handleLogout
-        }
+        { key: 'profile', icon: <User size={14} />, label: 'Thông tin cá nhân', onClick: () => navigate('/profile') },
+        { key: 'change-password', icon: <User size={14} />, label: 'Đổi mật khẩu', onClick: () => navigate('/change-password') },
+        { type: 'divider' },
+        { key: 'logout', icon: <LogOut size={14} />, label: 'Đăng xuất', danger: true, onClick: handleLogout }
     ];
 
     return (
         <Header
             style={{
                 padding: '0 24px',
-                background: colorBgContainer,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                // Bỏ shadow, thay bằng border tinh tế
-                borderBottom: '1px solid var(--border-color-light)',
-                boxShadow: 'none'
             }}
         >
-            {/* Logo/Brand Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-                <img
-                    src="/logo.svg"
-                    alt="Smart Farm"
-                    style={{ height: '32px' }}
-                    onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                    }}
-                />
-                <span className="gradient-text" style={{
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    letterSpacing: '0.5px'
+            {/* ✅ FIX: Logo container với icon thay thế và style chống vỡ chữ */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => navigate('/dashboard')}>
+                <div style={{
+                    backgroundColor: 'var(--primary-light)',
+                    borderRadius: '8px',
+                    padding: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
-                    Smart Farm IoT
+                    <Leaf color="white" size={20} />
+                </div>
+                <span className="gradient-text" style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '0.5px' }}>
+                    SmartFarm
                 </span>
             </div>
 
-            {/* Right Section: Farm Selector + Dark Mode + User Menu */}
-            <Space size="large">
+            <Space size="middle" align="center">
                 <GlobalSearch />
-                {/* Farm Selector */}
+
                 <Space>
-                    <HomeOutlined style={{ color: '#667eea', fontSize: '18px' }} />
+                    <Home size={18} color={isDark ? "var(--primary-dark)" : "var(--primary-light)"} />
                     <Select
                         style={{ minWidth: 220 }}
                         placeholder="Chọn nông trại..."
@@ -150,24 +100,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                         onChange={(value) => {
                             const selectedFarm = farms.find(f => f.id === value);
                             setFarmId(value);
-                            antdMessage.success(`Đã chuyển sang ${selectedFarm?.name}`, 2);
+                            antdMessage.success(`Đã chuyển sang nông trại ${selectedFarm?.name}`, 2);
                         }}
                         loading={loadingFarms}
-                        optionFilterProp="children"
                         showSearch
-                        suffixIcon={loadingFarms ? <Spin size="small" /> : <SwapOutlined />}
+                        optionFilterProp="children"
+                        suffixIcon={loadingFarms ? <Spin size="small" /> : <ChevronsUpDown size={16} />}
                         popupRender={(menu) => (
                             <>
                                 {menu}
-                                <div style={{
-                                    borderTop: '1px solid #f0f0f0',
-                                    padding: '8px',
-                                    textAlign: 'center'
-                                }}>
-                                    <a
-                                        onClick={() => navigate('/farms')}
-                                        style={{ fontSize: '12px', cursor: 'pointer' }}
-                                    >
+                                <div style={{ borderTop: '1px solid var(--border-light)', padding: '8px', textAlign: 'center' }}>
+                                    <a onClick={() => navigate('/farms')} style={{ fontSize: '12px' }}>
                                         + Quản lý nông trại
                                     </a>
                                 </div>
@@ -175,49 +118,25 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                         )}
                     >
                         {farms.map(farm => (
-                            <Option key={farm.id} value={farm.id}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontWeight: 500 }}>{farm.name}</span>
-                                    {farm.location && (
-                                        <span style={{ fontSize: '12px', color: '#999' }}>
-                                            📍 {farm.location}
-                                        </span>
-                                    )}
-                                </div>
-                            </Option>
+                            <Option key={farm.id} value={farm.id}>{farm.name}</Option>
                         ))}
                     </Select>
                 </Space>
 
-                {/* ✅ Dark Mode Toggle */}
                 <Tooltip title={isDark ? 'Chế độ sáng' : 'Chế độ tối'}>
                     <Button
                         type="text"
-                        icon={isDark ? <BulbFilled style={{ color: '#ffd700' }} /> : <BulbOutlined />}
+                        shape="circle"
+                        icon={isDark ? <Sun size={18} /> : <Moon size={18} />}
                         onClick={toggleTheme}
-                        style={{ fontSize: '20px' }}
                     />
                 </Tooltip>
 
-                {/* User Menu */}
                 <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
                     <a onClick={(e) => e.preventDefault()} style={{ cursor: 'pointer' }}>
                         <Space>
-                            <Avatar
-                                style={{
-                                    backgroundColor: '#667eea',
-                                    cursor: 'pointer'
-                                }}
-                                icon={<UserOutlined />}
-                            />
-                            <span style={{
-                                fontWeight: 500,
-                                color: isDark ? '#fff' : '#333',
-                                maxWidth: '150px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                            }}>
+                            <Avatar style={{ backgroundColor: '#818cf8' }} icon={<User size={18} />} />
+                            <span style={{ fontWeight: 500 }}>
                                 {user?.fullName || user?.email?.split('@')[0] || 'User'}
                             </span>
                         </Space>

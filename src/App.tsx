@@ -2,42 +2,32 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
-import LoginPage from './pages/LoginPage';
 import AppLayout from './layout/AppLayout';
 import NotFoundPage from './pages/NotFoundPage';
-import PrivateRoute from './components/PrivateRoute'; // ✅ Chỉ import, không khai báo lại
-import NetworkStatus from './components/NetworkStatus'; // ✅ THÊM
+import PrivateRoute from './components/PrivateRoute';
+import NetworkStatus from './components/NetworkStatus';
 import { isAuthenticated } from './utils/auth';
 
 // ✅ Lazy load các trang
+const LandingPage = lazy(() => import('./pages/LandingPage')); // ✅ THÊM LANDING PAGE
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const DevicesPage = lazy(() => import('./pages/DevicesPage'));
 const RulesPage = lazy(() => import('./pages/RulesPage'));
 const FarmsPage = lazy(() => import('./pages/FarmsPage'));
 const AIPredictionPage = lazy(() => import('./pages/AIPredictionPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage')); // ✅ THÊM
-const RegisterPage = lazy(() => import('./pages/RegisterPage')); // ✅ THÊM
-const CreateRulePage = lazy(() => import('./pages/CreateRulePage')); // ✅ THÊM
-const EditRulePage = lazy(() => import('./pages/EditRulePage')); // ✅ THÊM
+const ChangePasswordPage = lazy(() => import('./pages/ChangePasswordPage'));
+const CreateRulePage = lazy(() => import('./pages/CreateRulePage'));
+const EditRulePage = lazy(() => import('./pages/EditRulePage'));
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 const PlantHealthPage = lazy(() => import('./pages/PlantHealthPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
-
-
-
-
-
 const LoadingFallback = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100vh'
-  }}>
-    {/* ✅ BỎ tip prop */}
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
     <Spin size="large" />
   </div>
 );
@@ -46,12 +36,9 @@ function App() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    console.log('🔍 App mounted, checking auth...');
-    const timer = setTimeout(() => {
-      const isAuth = isAuthenticated();
-      console.log('🔍 Auth status:', isAuth);
-      setIsCheckingAuth(false);
-    }, 100);
+    // Việc kiểm tra auth này không còn quá quan trọng ở App.tsx nữa
+    // vì PrivateRoute sẽ xử lý, nhưng giữ lại cũng không sao.
+    const timer = setTimeout(() => setIsCheckingAuth(false), 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -61,40 +48,49 @@ function App() {
 
   return (
     <Router>
-      <NetworkStatus /> {/* ✅ THÊM */}
+      <NetworkStatus />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* ✅ Public routes */}
+          {/* ✅ Public routes: Landing, Login, Register */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* ✅ Protected routes */}
+          {/* ✅ Protected routes (tất cả các trang bên trong ứng dụng) */}
+          {/* Khi người dùng truy cập /dashboard, PrivateRoute sẽ kiểm tra auth */}
           <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <AppLayout />
-              </PrivateRoute>
-            }
+            path="/dashboard"
+            element={<PrivateRoute><AppLayout /></PrivateRoute>}
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="farms" element={<FarmsPage />} />
-            <Route path="devices" element={<DevicesPage />} />
-            <Route path="rules" element={<RulesPage />} />
-            <Route path="rules/create" element={<CreateRulePage />} />
-            <Route path="rules/edit/:ruleId" element={<EditRulePage />} />
-            <Route path="ai" element={<AIPredictionPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="change-password" element={<ChangePasswordPage />} />
-            <Route path="plant-health" element={<PlantHealthPage />} />
-            <Route path="admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="admin/users" element={<UserManagementPage />} />
-
-            <Route path="settings" element={<SettingsPage />} />
-
-
+            <Route index element={<DashboardPage />} />
           </Route>
+          <Route
+            path="/farms"
+            element={<PrivateRoute><AppLayout /></PrivateRoute>}
+          >
+            <Route index element={<FarmsPage />} />
+          </Route>
+          <Route
+            path="/devices"
+            element={<PrivateRoute><AppLayout /></PrivateRoute>}
+          >
+            <Route index element={<DevicesPage />} />
+          </Route>
+          <Route
+            path="/rules"
+            element={<PrivateRoute><AppLayout /></PrivateRoute>}
+          >
+            <Route index element={<RulesPage />} />
+            <Route path="create" element={<CreateRulePage />} />
+            <Route path="edit/:ruleId" element={<EditRulePage />} />
+          </Route>
+          <Route path="/ai" element={<PrivateRoute><AppLayout><AIPredictionPage /></AppLayout></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><AppLayout><ProfilePage /></AppLayout></PrivateRoute>} />
+          <Route path="/change-password" element={<PrivateRoute><AppLayout><ChangePasswordPage /></AppLayout></PrivateRoute>} />
+          <Route path="/plant-health" element={<PrivateRoute><AppLayout><PlantHealthPage /></AppLayout></PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute><AppLayout><SettingsPage /></AppLayout></PrivateRoute>} />
+          <Route path="/admin/dashboard" element={<PrivateRoute><AppLayout><AdminDashboardPage /></AppLayout></PrivateRoute>} />
+          <Route path="/admin/users" element={<PrivateRoute><AppLayout><UserManagementPage /></AppLayout></PrivateRoute>} />
 
           {/* ✅ 404 Page */}
           <Route path="*" element={<NotFoundPage />} />

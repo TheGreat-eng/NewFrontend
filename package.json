@@ -17,6 +17,7 @@
     "@types/sockjs-client": "^1.5.4",
     "antd": "5.27.4",
     "axios": "1.12.2",
+    "framer-motion": "^12.23.24",
     "jwt-decode": "4.0.0",
     "lucide-react": "0.545.0",
     "react": "18.3.1",
