@@ -1,13 +1,12 @@
 // src/pages/LoginPage.tsx
-
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Typography } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { MailOutlined, LockOutlined, RocketOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api/authService';
 import { setAuthData, isAuthenticated, clearAuthData } from '../utils/auth';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const LoginPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -24,56 +23,34 @@ const LoginPage: React.FC = () => {
         setLoading(true);
         try {
             const response = await login(values.username, values.password);
-            console.log('🔍 Full response:', response.data);
+            const { accessToken, refreshToken, ...userData } = response.data;
+            const authToken = accessToken || response.data.token;
 
-            const {
-                token,
-                accessToken,
-                refreshToken,
-                userId,
-                email,
-                fullName,
-                role,
-                phone
-            } = response.data;
-
-            const authToken = accessToken || token;
-
-            if (!authToken) {
-                throw new Error('Không nhận được token từ server');
-            }
+            if (!authToken) throw new Error('Không nhận được token từ server');
 
             clearAuthData();
-            console.log('🧹 Cleared old auth data');
 
-            // ✅ Chuẩn hóa user object - ĐẢM BẢO userId là số
             const userInfo = {
-                userId: typeof userId === 'number' ? userId : parseInt(userId, 10),
-                username: email.split('@')[0],
-                email: email,
-                fullName: fullName,
-                phone: phone || null,
-                roles: [role],
+                userId: userData.userId,
+                username: userData.email.split('@')[0],
+                email: userData.email,
+                fullName: userData.fullName,
+                phone: userData.phone || null,
+                roles: [userData.role],
             };
-
-            console.log('✅ Saving user:', userInfo);
 
             setAuthData(authToken, userInfo);
 
-            if (refreshToken) {
-                localStorage.setItem('refreshToken', refreshToken);
-            }
+            if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
-            message.success('Đăng nhập thành công!');
+            message.success('Đăng nhập thành công! Đang chuyển hướng...');
 
             setTimeout(() => {
-                console.log('🚀 Navigating to dashboard...');
                 window.location.href = '/dashboard';
             }, 500);
 
         } catch (error: any) {
-            console.error('❌ Login failed:', error);
-            const errorMsg = error.response?.data?.message || 'Đăng nhập thất bại';
+            const errorMsg = error.response?.data?.message || 'Email hoặc mật khẩu không chính xác.';
             message.error(errorMsg);
         } finally {
             setLoading(false);
@@ -81,72 +58,56 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="auth-background" style={{ // Sử dụng class từ index.css
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-        }}>
-            <Card style={{
-                width: 400,
-                borderRadius: '12px',
-                // Hiệu ứng glassmorphism
-                background: 'rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ color: '#fff', marginBottom: '8px' }}>
-                        Smart Farm IoT
-                    </Title>
-                    <Text style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Đăng nhập để tiếp tục</Text>
-                </div>
+        <div className="login-container">
+            <div className="login-showcase">
+                <Title level={1} style={{ color: 'white', fontWeight: 800, marginBottom: '1rem' }}>
+                    Nền tảng IoT cho Nông nghiệp Thông minh
+                </Title>
+                <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', maxWidth: '500px' }}>
+                    Giám sát, điều khiển và tối ưu hóa trang trại của bạn từ bất cứ đâu với dữ liệu thời gian thực và phân tích từ AI.
+                </Paragraph>
+            </div>
+            <div className="login-form-wrapper">
+                <div className="login-form">
+                    <Title level={2} style={{ marginBottom: 8 }}>Chào mừng trở lại!</Title>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+                        Vui lòng nhập thông tin để truy cập hệ thống.
+                    </Text>
 
-                <Form name="login" onFinish={onFinish} autoComplete="off" size="large">
-                    <Form.Item
-                        name="username"
-                        rules={[
-                            { required: true, message: 'Vui lòng nhập email!' },
-                            { type: 'email', message: 'Email không hợp lệ!' }
-                        ]}
-                    >
-                        <Input prefix={<UserOutlined />} placeholder="Email" />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="password"
-                        rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-                    >
-                        <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
-                    </Form.Item>
-
-                    <Form.Item>
-                        <Button
-                            type="primary"
-                            htmlType="submit"
-                            loading={loading}
-                            block
-                            style={{
-                                background: 'linear-gradient(135deg, #ffffff 0%, #e6e9ff 100%)',
-                                border: 'none',
-                                height: '40px',
-                                color: '#667eea', // Màu chữ
-                                fontWeight: '600'
-                            }}
+                    <Form name="login" onFinish={onFinish} autoComplete="off" size="large" layout="vertical">
+                        <Form.Item
+                            label="Email"
+                            name="username"
+                            rules={[
+                                { required: true, message: 'Vui lòng nhập email!' },
+                                { type: 'email', message: 'Email không hợp lệ!' }
+                            ]}
                         >
-                            Đăng nhập
-                        </Button>
-                    </Form.Item>
+                            <Input prefix={<MailOutlined />} placeholder="your-email@example.com" />
+                        </Form.Item>
 
+                        <Form.Item
+                            label="Mật khẩu"
+                            name="password"
+                            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+                        >
+                            <Input.Password prefix={<LockOutlined />} placeholder="••••••••" />
+                        </Form.Item>
 
-                    <div style={{ textAlign: 'center' }}>
-                        <Text style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                            Chưa có tài khoản? <a onClick={() => navigate('/register')} style={{ color: '#fff', fontWeight: 'bold' }}>Đăng ký ngay</a>
-                        </Text>
-                    </div>
-                </Form>
-            </Card>
+                        <Form.Item style={{ marginTop: 24 }}>
+                            <Button type="primary" htmlType="submit" loading={loading} block icon={<RocketOutlined />}>
+                                Đăng nhập
+                            </Button>
+                        </Form.Item>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <Text type="secondary">
+                                Chưa có tài khoản? <a onClick={() => navigate('/register')}>Đăng ký ngay</a>
+                            </Text>
+                        </div>
+                    </Form>
+                </div>
+            </div>
         </div>
     );
 };

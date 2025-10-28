@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Skeleton, Row, Col } from 'antd';
+import { Card, Skeleton, Row, Col, Space } from 'antd';
 
 export const DashboardSkeleton: React.FC = () => (
     <div style={{ padding: '24px' }}>
@@ -18,8 +18,18 @@ export const DashboardSkeleton: React.FC = () => (
     </div>
 );
 
-export const TableSkeleton: React.FC = () => (
+// ✅ CẢI THIỆN TABLE SKELETON
+export const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => (
     <Card>
-        <Skeleton active paragraph={{ rows: 10 }} />
+        {/* Skeleton cho Header của bảng */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
+            <Skeleton.Input style={{ width: 200 }} active />
+            <Space>
+                <Skeleton.Button active />
+                <Skeleton.Button active />
+            </Space>
+        </div>
+        {/* Skeleton cho nội dung bảng */}
+        <Skeleton active title={false} paragraph={{ rows, width: '100%' }} />
     </Card>
 );

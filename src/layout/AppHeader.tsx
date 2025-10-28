@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext'; // ✅ THÊM
 import { getFarms } from '../api/farmService';
 import { clearAuthData, getUserFromToken, getAuthToken } from '../utils/auth';
 import type { Farm } from '../types/farm';
+import GlobalSearch from '../components/GlobalSearch'; // Đảm bảo đã import
 
 
 // VVVV--- THÊM IMPORT NÀY ---VVVV
@@ -138,6 +139,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
 
             {/* Right Section: Farm Selector + Dark Mode + User Menu */}
             <Space size="large">
+                <GlobalSearch />
                 {/* Farm Selector */}
                 <Space>
                     <HomeOutlined style={{ color: '#667eea', fontSize: '18px' }} />
@@ -188,18 +190,12 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                 </Space>
 
                 {/* ✅ Dark Mode Toggle */}
-                <Tooltip title={isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'}>
+                <Tooltip title={isDark ? 'Chế độ sáng' : 'Chế độ tối'}>
                     <Button
                         type="text"
                         icon={isDark ? <BulbFilled style={{ color: '#ffd700' }} /> : <BulbOutlined />}
                         onClick={toggleTheme}
-                        style={{
-                            fontSize: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.3s ease',
-                        }}
+                        style={{ fontSize: '20px' }}
                     />
                 </Tooltip>
 

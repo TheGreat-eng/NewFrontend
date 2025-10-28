@@ -1,14 +1,15 @@
 // src/pages/FarmsPage.tsx
 
 import React, { useEffect, useState } from 'react'; // ✅ BỎ useCallback
-import { Row, Col, Card, Button, Typography, Spin, message, Popconfirm, Empty, Space } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, WifiOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Button, Typography, Spin, message, Popconfirm, Empty, Space, Tag, Statistic } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, PushpinOutlined } from '@ant-design/icons';
 import { getFarms, createFarm, updateFarm, deleteFarm } from '../api/farmService';
 import type { Farm, FarmFormData } from '../types/farm';
 import FarmFormModal from '../components/FarmFormModal';
 import { useFarm } from '../context/FarmContext';
 import { useApiCall } from '../hooks/useApiCall';
 import { SUCCESS_MESSAGES } from '../constants/messages';
+import Paragraph from 'antd/es/typography/Paragraph';
 
 const { Title, Text } = Typography;
 
@@ -88,10 +89,10 @@ const FarmsPage: React.FC = () => {
 
     const handleSelectFarm = (farm: Farm) => {
         const previousFarmId = farmId; // ✅ Backup
-        
+
         setFarmId(farm.id); // ✅ Optimistic update
         message.success(`Đã chuyển sang ${farm.name}`);
-        
+
         // ✅ Validate phía backend (nếu cần)
         // Nếu backend reject, rollback:
         // setFarmId(previousFarmId);
@@ -107,81 +108,73 @@ const FarmsPage: React.FC = () => {
     }
 
     return (
-        <div style={{ padding: '24px' }}>
+        <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Title level={2} style={{ margin: 0 }}>Quản lý Nông trại</Title>
+                <div>
+                    <Title level={2} style={{ margin: 0 }}>Quản lý Nông trại</Title>
+                    <Text type="secondary">Tất cả nông trại của bạn ở cùng một nơi.</Text>
+                </div>
                 <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-                    Thêm nông trại
+                    Thêm nông trại mới
                 </Button>
             </div>
 
             {farms.length > 0 ? (
-                <Row gutter={[16, 16]}>
+                <Row gutter={[24, 24]}>
                     {farms.map(farm => (
                         <Col xs={24} sm={12} lg={8} key={farm.id}>
                             <Card
                                 hoverable
                                 style={{
-                                    border: farmId === farm.id ? '2px solid #667eea' : '1px solid #f0f0f0',
-                                    transition: 'all 0.3s'
+                                    border: farmId === farm.id ? '1px solid var(--primary-light)' : '1px solid var(--border-light)',
+                                    boxShadow: farmId === farm.id ? '0 0 0 3px rgba(79, 70, 229, 0.1)' : 'none',
+                                    transition: 'all 0.2s ease-in-out',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%',
                                 }}
-                                title={
-                                    <Space>
+                                bodyStyle={{ flexGrow: 1, padding: 20 }}
+                            >
+                                <div style={{ flexGrow: 1 }}>
+                                    <Title level={4} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                                         {farm.name}
                                         {farmId === farm.id && (
-                                            <span style={{
-                                                fontSize: '12px',
-                                                color: '#667eea',
-                                                fontWeight: 'normal'
-                                            }}>
-                                                (Đang chọn)
-                                            </span>
+                                            <Tag icon={<CheckCircleOutlined />} color="processing" style={{ marginLeft: 8 }}>
+                                                Đang chọn
+                                            </Tag>
                                         )}
-                                    </Space>
-                                }
-                                actions={[
-                                    <Button
-                                        key="select"
-                                        type={farmId === farm.id ? 'primary' : 'default'}
-                                        size="small"
-                                        onClick={() => {
-                                            handleSelectFarm(farm);
-                                        }}
-                                        disabled={farmId === farm.id}
-                                    >
-                                        {farmId === farm.id ? 'Đang chọn' : 'Chọn'}
-                                    </Button>,
-                                    <EditOutlined key="edit" onClick={() => openEditModal(farm)} />,
-                                    <Popconfirm
-                                        key="delete"
-                                        title="Xóa nông trại?"
-                                        description="Hành động này sẽ xóa cả thiết bị bên trong."
-                                        onConfirm={() => handleDelete(farm.id)}
-                                        okText="Xóa"
-                                        cancelText="Hủy"
-                                        okButtonProps={{ danger: true }}
-                                    >
-                                        <DeleteOutlined style={{ color: '#ff4d4f' }} />
-                                    </Popconfirm>
-                                ]}
-                            >
-                                <Space direction="vertical" style={{ width: '100%' }}>
-                                    <Text type="secondary">
-                                        📍 {farm.location || 'Chưa có vị trí'}
+                                    </Title>
+                                    <Text type="secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+                                        <PushpinOutlined /> {farm.location || 'Chưa có vị trí'}
                                     </Text>
-                                    <Text>{farm.description || 'Không có mô tả'}</Text>
-                                    <div style={{
-                                        marginTop: 8,
-                                        padding: '8px',
-                                        background: '#f5f5f5',
-                                        borderRadius: '4px'
-                                    }}>
-                                        <WifiOutlined style={{ color: '#52c41a' }} />
-                                        <Text style={{ marginLeft: 8 }}>
-                                            {farm.onlineDevices ?? 0} / {farm.totalDevices ?? 0} thiết bị online
-                                        </Text>
-                                    </div>
-                                </Space>
+                                    <Paragraph type="secondary" ellipsis={{ rows: 2 }}>
+                                        {farm.description || 'Không có mô tả.'}
+                                    </Paragraph>
+                                </div>
+                                <div style={{ borderTop: '1px solid var(--border-light)', margin: '20px -20px 0', paddingTop: 20, paddingLeft: 20, paddingRight: 20 }}>
+                                    <Row justify="space-between" align="middle">
+                                        <Col>
+                                            <Statistic title="Thiết bị" value={farm.onlineDevices ?? 0} suffix={`/ ${farm.totalDevices ?? 0} Online`} />
+                                        </Col>
+                                        <Col>
+                                            <Space>
+                                                <Button icon={<EditOutlined />} onClick={() => openEditModal(farm)} />
+                                                <Popconfirm
+                                                    key="delete"
+                                                    title="Xóa nông trại này?"
+                                                    onConfirm={() => handleDelete(farm.id)}
+                                                    okText="Xóa"
+                                                    cancelText="Hủy"
+                                                >
+                                                    <Button danger icon={<DeleteOutlined />} />
+                                                </Popconfirm>
+                                                <Button type="primary" onClick={() => handleSelectFarm(farm)} disabled={farmId === farm.id}>
+                                                    Chọn
+                                                </Button>
+                                            </Space>
+                                        </Col>
+                                    </Row>
+                                </div>
                             </Card>
                         </Col>
                     ))}

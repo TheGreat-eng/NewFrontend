@@ -1,8 +1,8 @@
 // src/pages/DevicesPage.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Space, Tag, Card, message, Typography, Popconfirm, Modal, Input, Spin, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SyncOutlined, ThunderboltOutlined, WifiOutlined as WifiIcon, StopOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, message, Popconfirm, Input, Spin, Alert, Tooltip, Badge, Typography } from 'antd'; // Thêm Tooltip, Badge
+import { PlusOutlined, DownloadOutlined, EditOutlined, DeleteOutlined, SyncOutlined, ThunderboltOutlined, WifiOutlined as WifiIcon, StopOutlined } from '@ant-design/icons';
 import { getDevicesByFarm, createDevice, updateDevice, deleteDevice, controlDevice } from '../api/deviceService';
 import type { Device } from '../types/device';
 import { useFarm } from '../context/FarmContext';
@@ -14,7 +14,26 @@ import { SUCCESS_MESSAGES } from '../constants/messages';
 import { useDebounce } from '../hooks/useDebounce';
 import { exportDeviceDataAsCsv } from '../api/reportService';
 
-const { Title } = Typography;
+
+import { useStomp } from '../hooks/useStomp'; // ✅ Import hook useStomp
+import type { DeviceStatusMessage } from '../types/websocket';
+
+
+
+
+import { TableSkeleton } from '../components/LoadingSkeleton';
+
+const { Title, Text } = Typography;
+
+const PageHeader = ({ title, subtitle, actions }: { title: string, subtitle: string, actions: React.ReactNode }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div>
+            <Title level={2} style={{ margin: 0 }}>{title}</Title>
+            <Text type="secondary">{subtitle}</Text>
+        </div>
+        <Space>{actions}</Space>
+    </div>
+);
 
 const DevicesPage: React.FC = () => {
     const { farmId, isLoadingFarm } = useFarm(); // ✅ THÊM isLoadingFarm
@@ -24,6 +43,44 @@ const DevicesPage: React.FC = () => {
     const [controllingDevices, setControllingDevices] = useState<Set<string>>(new Set());
     const [searchText, setSearchText] = useState('');
     const debouncedSearchText = useDebounce(searchText, 300);
+    // ✅ THÊM LOGIC STOMP/WEBSOCKET
+    const { stompClient, isConnected } = useStomp(farmId);
+
+    useEffect(() => {
+        if (isConnected && stompClient) {
+            console.log('Subscribing to device status topic...');
+            const subscription = stompClient.subscribe(
+                `/topic/farm/${farmId}/device-status`,
+                (message) => {
+                    try {
+                        const statusUpdate: DeviceStatusMessage = JSON.parse(message.body);
+                        console.log('Received device status update:', statusUpdate);
+
+                        // Cập nhật trạng thái của thiết bị trong danh sách
+                        setDevices(prevDevices =>
+                            prevDevices.map(device =>
+                                device.deviceId === statusUpdate.deviceId
+                                    ? { ...device, status: statusUpdate.status, lastSeen: statusUpdate.timestamp }
+                                    : device
+                            )
+                        );
+
+                        // Hiển thị một thông báo nhỏ (tùy chọn)
+                        message.info(`Thiết bị ${statusUpdate.deviceId} đã ${statusUpdate.status.toLowerCase()}.`, 2);
+
+                    } catch (error) {
+                        console.error('Failed to parse device status message:', error);
+                    }
+                }
+            );
+
+            // Cleanup subscription khi component unmount hoặc farmId thay đổi
+            return () => {
+                console.log('Unsubscribing from device status topic...');
+                subscription.unsubscribe();
+            };
+        }
+    }, [isConnected, stompClient, farmId]);
 
     const { loading, execute: fetchDevicesApi } = useApiCall<Device[]>({
         onSuccess: (data) => setDevices(data)
@@ -309,91 +366,83 @@ const DevicesPage: React.FC = () => {
         {
             title: 'Hành động',
             key: 'action',
-            width: 150,
+            width: 180,
             fixed: 'right' as const,
             render: (_: any, record: Device) => (
                 <Space size="small">
-                    <Button type="link" size="small" icon={<EditOutlined />} onClick={() => showModal(record)}>
-                        Sửa
-                    </Button>
-                    <Popconfirm
-                        title="Xóa thiết bị?"
-                        description="Hành động này không thể hoàn tác."
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Xóa"
-                        cancelText="Hủy"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-                            Xóa
-                        </Button>
-                    </Popconfirm>
-                    <Button onClick={() => {
-                        const end = new Date().toISOString();
-                        const start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-                        exportDeviceDataAsCsv(record.deviceId, start, end);
-                    }}>
-                        Export CSV
-                    </Button>
+                    <Tooltip title="Sửa">
+                        <Button type="text" icon={<EditOutlined />} onClick={() => showModal(record)} />
+                    </Tooltip>
+                    <Tooltip title="Xóa">
+                        <Popconfirm
+                            title="Xóa thiết bị?"
+                            onConfirm={() => handleDelete(record.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                        >
+                            <Button type="text" danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                    </Tooltip>
+                    <Tooltip title="Xuất CSV">
+                        <Button type="text" icon={<DownloadOutlined />} onClick={() => {
+                            const end = new Date().toISOString();
+                            const start = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                            exportDeviceDataAsCsv(record.deviceId, start, end);
+                        }} />
+                    </Tooltip>
                 </Space>
             ),
         },
     ];
 
-    return (
-        <div style={{ padding: '24px' }}>
-            <Card>
-                <div style={{ marginBottom: 16 }}>
-                    <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                        <Title level={2} style={{ margin: 0 }}>
-                            Quản lý Thiết bị
-                            {/* ✅ THÊM: Hiển thị số lượng */}
-                            <span style={{ fontSize: '14px', color: '#999', marginLeft: 8 }}>
-                                ({devices.length} thiết bị)
-                            </span>
-                        </Title>
-                        <Space>
-                            <Input
-                                placeholder="Tìm kiếm thiết bị..."
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                style={{ width: 250 }}
-                                allowClear
-                            />
-                            <Button icon={<SyncOutlined />} onClick={fetchDevices} loading={loading}>
-                                Làm mới
-                            </Button>
-                            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-                                Thêm thiết bị
-                            </Button>
-                        </Space>
-                    </Space>
-                </div>
-                <Table
-                    columns={columns}
-                    dataSource={filteredDevices}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showTotal: (total) => `Tổng ${total} thiết bị`
-                    }}
-                    scroll={{ x: 1200 }}
-                />
-            </Card>
+    if (loading && devices.length === 0) {
+        return <TableSkeleton />;
+    }
 
-            <DeviceFormModal
-                visible={isModalVisible}
-                onClose={handleCancel}
-                onSubmit={handleSubmit}
-                initialData={editingDevice ? {
-                    name: editingDevice.name,
-                    deviceId: editingDevice.deviceId,
-                    type: editingDevice.type,
-                } : null}
-                loading={formLoading}
+
+
+    return (
+        <div>
+            <PageHeader
+                title="Quản lý Thiết bị"
+                subtitle={`${devices.length} thiết bị trong nông trại này`}
+                actions={
+                    <>
+                        <Input.Search
+                            placeholder="Tìm kiếm..."
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            style={{ width: 250 }}
+                            allowClear
+                        />
+                        <Button icon={<SyncOutlined />} onClick={fetchDevices} loading={loading} />
+                        <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+                            Thêm mới
+                        </Button>
+                    </>
+                }
             />
+            <Table
+                columns={columns}
+                dataSource={filteredDevices}
+                rowKey="id"
+                loading={loading} // Giữ lại loading prop để hiển thị spinner khi refresh
+                pagination={{ pageSize: 10 }}
+                scroll={{ x: 1200 }}
+            />
+            {isModalVisible && (
+                <DeviceFormModal
+                    visible={isModalVisible}
+                    onClose={handleCancel}
+                    onSubmit={handleSubmit}
+                    initialData={editingDevice ? {
+                        name: editingDevice.name,
+                        deviceId: editingDevice.deviceId,
+                        type: editingDevice.type,
+                    } : null}
+                    loading={formLoading}
+                />
+            )}
         </div>
     );
 };

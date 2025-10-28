@@ -16,62 +16,77 @@ import { DashboardSkeleton } from '../components/LoadingSkeleton';
 import type { SensorDataMessage } from '../types/websocket';
 import { getAuthToken } from '../utils/auth';
 import { Empty } from 'antd';
+import { motion } from 'framer-motion';
+
+import { Area } from 'recharts'; // Thêm Area
+import { useTheme } from '../context/ThemeContext';
+
 
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// ✅ THIẾT KẾ LẠI STATS CARD
-const StatsCard = React.memo<{ title: string; value: number | string; icon: React.ReactNode; color: string; suffix?: string; precision?: number }>(
-    ({ title, value, icon, color, suffix, precision }) => (
-        <Card
-            hoverable
-            style={{
-                height: '100%',
-                borderRadius: 12,
-                overflow: 'hidden',
-                position: 'relative',
-                border: 'none',
-            }}
-            bodyStyle={{ padding: 0 }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', padding: '20px' }}>
-                <div style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: color,
-                    color: '#fff',
-                    marginRight: 16,
-                    flexShrink: 0,
-                }}>
-                    {icon}
-                </div>
+// ✅ THIẾT KẾ LẠI STATS CARD THEO PHONG CÁCH MỚI
+const StatsCard = React.memo<{ title: string; value: number | string; icon: React.ReactNode; suffix?: string; precision?: number }>(
+    ({ title, value, icon, suffix, precision }) => (
+        <Card>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <Text style={{ color: 'var(--text-color-secondary-light)', fontSize: 14 }}>{title}</Text>
-                    <Title level={4} style={{ margin: 0, marginTop: 4, color: 'var(--text-color-light)' }}>
-                        <Statistic
-                            value={value}
-                            precision={precision}
-                            suffix={suffix}
-                            valueStyle={{ fontSize: 22, color: 'inherit' }}
-                        />
-                    </Title>
+                    <Text type="secondary" style={{ textTransform: 'uppercase', fontSize: 12, fontWeight: 600 }}>{title}</Text>
+                    <Statistic
+                        value={value}
+                        precision={precision}
+                        suffix={suffix}
+                        valueStyle={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}
+                    />
                 </div>
+                {icon}
             </div>
-            {/* Dải màu trang trí */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: color }} />
         </Card>
     )
+);
+
+// Helper component để chuẩn hóa tiêu đề trang
+const PageHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
+    <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>{title}</Title>
+        <Text type="secondary">{subtitle}</Text>
+    </div>
 );
 
 interface AggregatedDataPoint {
     timestamp: string;
     avgValue?: number;
 }
+
+// ✅ TẠO CUSTOM TOOLTIP
+const CustomTooltip = ({ active, payload, label }: any) => {
+
+    // ✅ Dùng useTheme để thay đổi style
+    const { isDark } = useTheme();
+
+    if (active && payload && payload.length) {
+        return (
+            <div style={{
+                background: isDark ? 'var(--card-dark)' : 'var(--card-light)',
+                padding: '10px 15px',
+                borderRadius: 'var(--radius)',
+                border: `1px solid ${isDark ? 'var(--border-dark)' : 'var(--border-light)'}`,
+                color: isDark ? 'var(--foreground-dark)' : 'var(--foreground-light)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}>
+                <p style={{ fontWeight: 600, marginBottom: 8 }}>{`Thời gian: ${label}`}</p>
+                {payload.map((pld: any) => (
+                    <div key={pld.dataKey} style={{ color: pld.color, display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+                        <span>{pld.name}:</span>
+                        <strong>{`${pld.value.toFixed(1)} ${pld.unit || ''}`}</strong>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return null;
+};
 
 const DashboardPage: React.FC = () => {
     const { farmId, isLoadingFarm } = useFarm();
@@ -245,14 +260,20 @@ const DashboardPage: React.FC = () => {
     // JSX và các phần còn lại giữ nguyên...
     // ✅ CẬP NHẬT STATS CARDS VỚI DESIGN MỚI
     const statsCards = useMemo(() => (
+
+
         <Row gutter={[24, 24]}>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi size={24} />} color="#10b981" suffix={` / ${summary?.totalDevices ?? 0}`} /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Nhiệt độ TB" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer size={24} />} color="#ef4444" suffix="°C" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} icon={<Droplet size={24} />} color="#3b82f6" suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} icon={<Leaf size={24} />} color="#84cc16" suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker size={24} />} color="#f59e0b" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Ánh sáng TB" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun size={24} />} color="#f97316" suffix=" lux" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi size={24} color="#10b981" />} suffix={` / ${summary?.totalDevices ?? 0}`} /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Nhiệt độ" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer size={24} color="#ef4444" />} suffix="°C" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} icon={<Droplet size={24} color="#3b82f6" />} suffix="%" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} icon={<Leaf size={24} color="#84cc16" />} suffix="%" /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker size={24} color="#f59e0b" />} /></Col>
+            <Col xs={12} sm={12} md={8}><StatsCard title="Ánh sáng" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun size={24} color="#f97316" />} suffix=" lux" /></Col>
         </Row>
+
+
+
+
     ), [summary]);
 
     const chartComponent = useMemo(() => {
@@ -260,7 +281,32 @@ const DashboardPage: React.FC = () => {
             if (chartLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}><Spin /></div>;
             if (chartData.length === 0) return <Empty description="Không có dữ liệu biểu đồ" style={{ height: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} />;
             if (activeChart === 'env') {
-                return <ResponsiveContainer width="100%" height={350}><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis yAxisId="left" stroke="#ff4d4f" domain={['dataMin - 2', 'dataMax + 2']} /><YAxis yAxisId="right" orientation="right" stroke="#1677ff" domain={['dataMin - 5', 'dataMax + 5']} /><Tooltip /><Legend /><Line yAxisId="left" type="monotone" dataKey="temperature" stroke="#ff4d4f" name="Nhiệt độ (°C)" dot={false} /><Line yAxisId="right" type="monotone" dataKey="humidity" stroke="#1677ff" name="Độ ẩm không khí (%)" dot={false} /></LineChart></ResponsiveContainer>;
+                return (
+                    <ResponsiveContainer width="100%" height={350}>
+                        <LineChart data={chartData}>
+                            <defs>
+                                <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
+                            <XAxis dataKey="time" stroke="var(--muted-foreground-light)" />
+                            <YAxis yAxisId="left" stroke="#ef4444" />
+                            <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Area yAxisId="left" type="monotone" dataKey="temperature" stroke="#ef4444" fillOpacity={1} fill="url(#colorTemp)" />
+                            <Line yAxisId="left" type="monotone" dataKey="temperature" stroke="#ef4444" name="Nhiệt độ" unit="°C" dot={false} strokeWidth={2} />
+                            <Area yAxisId="right" type="monotone" dataKey="humidity" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHumid)" />
+                            <Line yAxisId="right" type="monotone" dataKey="humidity" stroke="#3b82f6" name="Độ ẩm" unit="%" dot={false} strokeWidth={2} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                );
             }
             if (activeChart === 'soil') {
                 return <ResponsiveContainer width="100%" height={350}><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="time" /><YAxis yAxisId="left" stroke="#82ca9d" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" stroke="#ffc658" domain={[4, 9]} /><Tooltip /><Legend /><Line yAxisId="left" type="monotone" dataKey="soilMoisture" stroke="#82ca9d" name="Độ ẩm đất (%)" dot={false} /><Line yAxisId="right" type="monotone" dataKey="soilPH" stroke="#ffc658" name="Độ pH đất" dot={false} /></LineChart></ResponsiveContainer>;
@@ -290,18 +336,17 @@ const DashboardPage: React.FC = () => {
     if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: '20px' }} />;
 
     return (
-        <div>
-            {/* Thay thế Title cũ bằng Page Header */}
-            <div style={{ marginBottom: 24 }}>
-                <Title level={2} style={{ margin: 0 }}>Dashboard Tổng Quan</Title>
-                <Text type="secondary">Phân tích dữ liệu thời gian thực từ các cảm biến.</Text>
-            </div>
+        <div style={{ padding: '0 4px' }}> {/* Thêm padding nhỏ để nội dung không dính sát lề */}
+            <PageHeader
+                title="Dashboard Tổng Quan"
+                subtitle="Phân tích dữ liệu thời gian thực từ các cảm biến."
+            />
 
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={16}>
                     {statsCards}
-                    <Card style={{ marginTop: '24px', borderRadius: 12 }}>
-                        <Tabs defaultActiveKey="env" onChange={handleTabChange} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' },]} />
+                    <Card style={{ marginTop: 24 }}>
+                        <Tabs defaultActiveKey="env" onChange={handleTabChange} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' }]} />
                         {chartComponent}
                     </Card>
                 </Col>

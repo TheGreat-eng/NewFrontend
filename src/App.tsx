@@ -23,6 +23,7 @@ const EditRulePage = lazy(() => import('./pages/EditRulePage')); // ✅ THÊM
 const UserManagementPage = lazy(() => import('./pages/admin/UserManagementPage'));
 const PlantHealthPage = lazy(() => import('./pages/PlantHealthPage'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 
 
@@ -89,6 +90,10 @@ function App() {
             <Route path="plant-health" element={<PlantHealthPage />} />
             <Route path="admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="admin/users" element={<UserManagementPage />} />
+
+            <Route path="settings" element={<SettingsPage />} />
+
+
           </Route>
 
           {/* ✅ 404 Page */}

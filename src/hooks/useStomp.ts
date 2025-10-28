@@ -6,13 +6,13 @@ import { getAuthToken } from '../utils/auth';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8080/ws';
 
-export const useStomp = (farmId: number | null) => {
+export const useStomp = (topicId: number | string | null, type: 'farm' | 'user' = 'farm') => {
     const [stompClient, setStompClient] = useState<Client | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        if (!farmId) {
-            console.warn('STOMP: No farmId, connection skipped.');
+        if (!topicId) {
+            console.warn(`STOMP: No ${type}Id, connection skipped.`);
             return;
         }
 
@@ -22,7 +22,7 @@ export const useStomp = (farmId: number | null) => {
             return;
         }
 
-        console.log(`STOMP: Initializing connection for farm ${farmId}...`);
+        console.log(`STOMP: Initializing connection for ${type} ${topicId}...`);
 
         const client = new Client({
             // Sử dụng SockJS làm transport
@@ -62,7 +62,7 @@ export const useStomp = (farmId: number | null) => {
             client.deactivate();
             setIsConnected(false);
         };
-    }, [farmId]);
+    }, [topicId, type]); // ✅ Thêm dependency
 
     const subscribe = (topic: string, callback: (message: IMessage) => void) => {
         if (stompClient && isConnected) {

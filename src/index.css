@@ -1,81 +1,249 @@
 /* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* ==========================================================================
+   CSS Variables for Theming
+   ========================================================================== */
 :root {
-    --primary-color: #667eea;
-    --primary-color-dark: #5a6ed8;
-    --secondary-color: #764ba2;
-    --background-color-light: #f7f8fc;
-    --background-color-dark: #141414;
-    --card-background-light: #ffffff;
-    --card-background-dark: #1d1d1d;
-    --text-color-light: #1f2937;
-    --text-color-dark: #e5e7eb;
-    --text-color-secondary-light: #6b7280;
-    --text-color-secondary-dark: #9ca3af;
-    --border-color-light: #e5e7eb;
-    --border-color-dark: #303030;
-    --success-color: #10b981;
-    --warning-color: #f59e0b;
-    --error-color: #ef4444;
+    --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
 
-    --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Light Theme */
+    --background-light: #f4f7fe;
+    --foreground-light: #111827;
+    --card-light: #ffffff;
+    --card-foreground-light: #111827;
+    --popover-light: #ffffff;
+    --popover-foreground-light: #111827;
+    --primary-light: #4f46e5;
+    --primary-foreground-light: #f8fafc;
+    --secondary-light: #f1f5f9;
+    --secondary-foreground-light: #4f46e5;
+    --muted-light: #f1f5f9;
+    --muted-foreground-light: #64748b;
+    --accent-light: #f1f5f9;
+    --accent-foreground-light: #4f46e5;
+    --destructive-light: #ef4444;
+    --destructive-foreground-light: #f8fafc;
+    --border-light: #e2e8f0;
+    --input-light: #e2e8f0;
+    --ring-light: #4f46e5;
+
+    /* Dark Theme */
+    --background-dark: #020817;
+    --foreground-dark: #f8fafc;
+    --card-dark: #0f172a;
+    --card-foreground-dark: #f8fafc;
+    --popover-dark: #0f172a;
+    --popover-foreground-dark: #f8fafc;
+    --primary-dark: #6366f1;
+    --primary-foreground-dark: #f8fafc;
+    --secondary-dark: #1e293b;
+    --secondary-foreground-dark: #f8fafc;
+    --muted-dark: #1e293b;
+    --muted-foreground-dark: #94a3b8;
+    --accent-dark: #1e293b;
+    --accent-foreground-dark: #f8fafc;
+    --destructive-dark: #ef4444;
+    --destructive-foreground-dark: #f8fafc;
+    --border-dark: #1e293b;
+    --input-dark: #1e293b;
+    --ring-dark: #6366f1;
+
+    --radius: 0.75rem;
+    /* 12px */
 }
 
+/* ==========================================================================
+   Base Styles
+   ========================================================================== */
 body {
-    font-family: var(--font-family-sans);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    -moz-osx-smoothing: grayscale;
 }
 
 body[data-theme='light'] {
-    background-color: var(--background-color-light);
+    background: var(--background-light);
+    color: var(--foreground-light);
 }
 
 body[data-theme='dark'] {
-    background-color: var(--background-color-dark);
+    background: var(--background-dark);
+    color: var(--foreground-dark);
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* ==========================================================================
+   Login Page - Split Screen Layout
+   ========================================================================== */
+.login-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--card-light);
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
+.login-showcase {
+    flex: 1;
+    background: url('https://images.unsplash.com/photo-1542887800-8466d3a863ba?q=80&w=2832&auto=format&fit=crop') center center / cover no-repeat;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 4rem;
+    color: white;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 10px;
+.login-showcase::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(79, 70, 229, 0.5) 100%);
 }
 
-body[data-theme='dark'] ::-webkit-scrollbar-thumb {
-    background: #4b5563;
+.login-showcase>* {
+    position: relative;
+    z-index: 2;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+.login-form-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
 }
 
-body[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+.login-form {
+    width: 100%;
+    max-width: 400px;
 }
 
-/* Gradient text */
-.gradient-text {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-fill-color: transparent;
+@media (max-width: 992px) {
+    .login-showcase {
+        display: none;
+    }
 }
 
-/* Subtle background pattern for login page */
-.auth-background {
-    background-color: #667eea;
-    background-image:
-        linear-gradient(135deg, #667eea 0%, #764ba2 100%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h16a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h9a1 1 0 0 1 1 1h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1H85v9h15v1z'/%3E%3Cpath d='M6 6h4v4H6V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zm9 0h4v4h-4V6zM6 15h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 24h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 33h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 42h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 51h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 60h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 69h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 78h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zM6 87h4v4H6v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4zm9 0h4v4h-4v-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+
+/* ==========================================================================
+   Ant Design Overrides
+   ========================================================================== */
+/* Table */
+.ant-table-wrapper {
+    background: transparent !important;
+}
+
+.ant-table {
+    background: var(--card-light) !important;
+    border-radius: var(--radius) !important;
+}
+
+body[data-theme='dark'] .ant-table {
+    background: var(--card-dark) !important;
+}
+
+.ant-table-thead>tr>th {
+    background: var(--muted-light) !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    color: var(--muted-foreground-light) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 12px !important;
+}
+
+body[data-theme='dark'] .ant-table-thead>tr>th {
+    background: var(--muted-dark) !important;
+    border-bottom: 1px solid var(--border-dark) !important;
+    color: var(--muted-foreground-dark) !important;
+}
+
+.ant-table-tbody>tr>td {
+    border-bottom: 1px solid var(--border-light) !important;
+}
+
+body[data-theme='dark'] .ant-table-tbody>tr>td {
+    border-bottom: 1px solid var(--border-dark) !important;
+}
+
+.ant-table-tbody>tr.ant-table-row:hover>td {
+    background: var(--accent-light) !important;
+}
+
+body[data-theme='dark'] .ant-table-tbody>tr.ant-table-row:hover>td {
+    background: var(--accent-dark) !important;
+}
+
+.ant-table-pagination.ant-pagination {
+    margin: 24px 16px !important;
+}
+
+/* Card */
+.ant-card {
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-light) !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+body[data-theme='dark'] .ant-card {
+    border: 1px solid var(--border-dark) !important;
+}
+
+/* Sider */
+.ant-layout-sider {
+    border-right: 1px solid var(--border-light) !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02) !important;
+}
+
+body[data-theme='dark'] .ant-layout-sider {
+    border-right: 1px solid var(--border-dark) !important;
+}
+
+/* Header */
+.ant-layout-header {
+    border-bottom: 1px solid var(--border-light) !important;
+}
+
+body[data-theme='dark'] .ant-layout-header {
+    border-bottom: 1px solid var(--border-dark) !important;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+.page-fade-enter {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.page-fade-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+/* Thêm animation vào content của AppLayout */
+.app-content {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ... */
+.search-result-item:hover {
+    background-color: var(--accent-light);
+}
+
+body[data-theme='dark'] .search-result-item:hover {
+    background-color: var(--accent-dark);
 }

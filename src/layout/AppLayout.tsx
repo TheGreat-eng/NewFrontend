@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     DesktopOutlined,
     PieChartOutlined,
@@ -17,6 +17,13 @@ import AppFooter from './AppFooter';
 // ... imports
 import { CrownOutlined } from '@ant-design/icons'; // Thêm icon
 import { hasRole, getUserFromStorage } from '../utils/auth'; // Thêm util
+import PageBreadcrumb from '../components/PageBreadcrumb'; // ✅ THÊM
+
+
+
+import { notification } from 'antd'; // ✅ Import notification
+import { BellOutlined } from '@ant-design/icons';
+import { useStomp } from '../hooks/useStomp';
 
 const { Content, Sider } = Layout;
 
@@ -49,6 +56,31 @@ const AppLayout: React.FC = () => {
     const user = getUserFromStorage();
     const isAdmin = user && user.roles && user.roles.includes('ADMIN');
 
+    const { stompClient, isConnected } = useStomp(user ? user.userId : null); // ✅ Sử dụng userId để kết nối
+
+    // ✅ Lắng nghe thông báo
+    useEffect(() => {
+        if (isConnected && stompClient && user) {
+            const subscription = stompClient.subscribe(
+                `/topic/user/${user.userId}/notifications`,
+                (message) => {
+                    try {
+                        const notificationData = JSON.parse(message.body);
+                        notification.open({
+                            message: notificationData.title,
+                            description: notificationData.message,
+                            icon: <BellOutlined style={{ color: '#108ee9' }} />,
+                            placement: 'bottomRight',
+                        });
+                    } catch (error) {
+                        console.error('Failed to parse notification message:', error);
+                    }
+                }
+            );
+            return () => subscription.unsubscribe();
+        }
+    }, [isConnected, stompClient, user]);
+
     const menuItems: MenuItem[] = [
         getItem('Dashboard', '/dashboard', <PieChartOutlined />),
         getItem('Dự đoán AI', '/ai', <RobotOutlined />),
@@ -67,12 +99,13 @@ const AppLayout: React.FC = () => {
             getItem('Thông tin cá nhân', '/profile'),
             getItem('Đổi mật khẩu', '/change-password'),
         ]),
+        getItem('Cài đặt', '/settings', <SettingOutlined />),
     ].filter(Boolean) as MenuItem[]; // .filter(Boolean) để loại bỏ giá trị false (khi user không phải admin)
     // ^^^^------------------------------------^^^^
 
     return (
         // Layout chính sử dụng màu nền từ theme
-        <Layout style={{ minHeight: '100vh', background: colorBgLayout }}>
+        <Layout style={{ minHeight: '100vh' }}>
             <Sider
                 collapsible
                 collapsed={collapsed}
@@ -123,7 +156,6 @@ const AppLayout: React.FC = () => {
             <Layout style={{
                 marginLeft: collapsed ? 80 : 200,
                 transition: 'margin-left 0.2s',
-                background: 'transparent' // Để màu nền của layout cha hiển thị
             }}>
                 <div style={{
                     position: 'sticky',
@@ -134,16 +166,11 @@ const AppLayout: React.FC = () => {
                     <AppHeader colorBgContainer={colorBgContainer} />
                 </div>
 
-                <Content
-                    style={{
-                        // Tăng padding để "dễ thở" hơn
-                        margin: '24px 16px',
-                        padding: 0,
-                        minHeight: 280,
-                        overflow: 'initial'
-                    }}
-                >
-                    <div style={{ padding: 24, background: colorBgContainer, borderRadius: 12 }}>
+                {/* ✅ THAY ĐỔI: Bỏ padding ở đây để các trang con tự quản lý */}
+                <Content style={{ margin: '24px 16px', overflow: 'initial' }}>
+                    {/* ✅ THÊM BREADCRUMB Ở ĐÂY */}
+                    <PageBreadcrumb />
+                    <div className="app-content" key={location.pathname}>
                         <Outlet />
                     </div>
                 </Content>
