@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import api from '../api/axiosConfig';
+import { changeMyPassword, type ChangePasswordData } from '../api/userService';
+
 
 const { Title } = Typography;
 
@@ -13,15 +15,17 @@ const ChangePasswordPage: React.FC = () => {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            // Gọi API mới từ backend
-            await api.post('/users/change-password', {
+            const data: ChangePasswordData = {
                 oldPassword: values.oldPassword,
                 newPassword: values.newPassword,
-            });
+            };
+            // VVVV--- SỬA LẠI LỜI GỌI API ---VVVV
+            await changeMyPassword(data);
+            // ^^^^-----------------------------^^^^
             message.success('Đổi mật khẩu thành công!');
-            form.resetFields(); // Xóa các trường trong form
+            form.resetFields();
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Đổi mật khẩu thất bại. Vui lòng thử lại.';
+            const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Đổi mật khẩu thất bại.';
             message.error(errorMessage);
         } finally {
             setLoading(false);

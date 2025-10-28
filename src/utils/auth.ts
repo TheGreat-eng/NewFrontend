@@ -45,15 +45,15 @@ export const getAuthToken = (): string | null => {
 /**
  * Lấy thông tin user từ token
  */
+// src/utils/auth.ts
 export const getUserFromToken = (token: string): any | null => {
     try {
         const decoded = jwtDecode<DecodedToken>(token);
-
         return {
-            userId: decoded.userId || decoded.sub, // ✅ SỬA: Ưu tiên userId nếu có
-            username: decoded.sub.split('@')[0],
+            userId: decoded.userId || decoded.sub,
+            // username: decoded.sub.split('@')[0], // <-- XÓA DÒNG NÀY
             email: decoded.sub,
-            fullName: decoded.fullName || decoded.name || null, // ✅ THÊM fallback
+            fullName: decoded.fullName || decoded.name || null,
             roles: decoded.roles || ['FARMER']
         };
     } catch (error) {

@@ -19,10 +19,10 @@ const LoginPage: React.FC = () => {
         }
     }, [navigate]);
 
-    const onFinish = async (values: { username: string; password: string }) => {
+    const onFinish = async (values: { email: string; password: string }) => {
         setLoading(true);
         try {
-            const response = await login(values.username, values.password);
+            const response = await login(values.email, values.password);
             const { accessToken, refreshToken, ...userData } = response.data;
             const authToken = accessToken || response.data.token;
 
@@ -77,7 +77,7 @@ const LoginPage: React.FC = () => {
                     <Form name="login" onFinish={onFinish} autoComplete="off" size="large" layout="vertical">
                         <Form.Item
                             label="Email"
-                            name="username"
+                            name="email"
                             rules={[
                                 { required: true, message: 'Vui lòng nhập email!' },
                                 { type: 'email', message: 'Email không hợp lệ!' }

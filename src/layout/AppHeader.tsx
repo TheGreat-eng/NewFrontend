@@ -218,7 +218,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ colorBgContainer = '#ffffff' }) =
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
                             }}>
-                                {user?.username || user?.username?.split('@')[0] || 'User'}
+                                {user?.fullName || user?.email?.split('@')[0] || 'User'}
                             </span>
                         </Space>
                     </a>
