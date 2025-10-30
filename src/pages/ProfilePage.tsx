@@ -74,6 +74,11 @@ const ProfilePage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
                     <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: '#667eea' }} />
                     <div style={{ marginLeft: 20 }}>
+                        <Title level={4} style={{ margin: 0 }}>{user.fullName}</Title>
+
+
+
+
                         <Tag color="blue">{user.role}</Tag>
                     </div>
                 </div>

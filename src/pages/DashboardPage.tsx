@@ -1,4 +1,4 @@
-// src/pages/DashboardPage.tsx — Revamped UI/UX (kept logic & APIs intact)
+// src/pages/DashboardPage.tsx — FIXED VERSION
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space, Empty, Tag } from 'antd';
@@ -16,11 +16,10 @@ import { DashboardSkeleton } from '../components/LoadingSkeleton';
 import type { SensorDataMessage } from '../types/websocket';
 import { getAuthToken } from '../utils/auth';
 import { useTheme } from '../context/ThemeContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import đúng
+import { useDashboardSummary } from '../hooks/useDashboardData'; // Import hook
 
-const { Title, Text } = Typography;
-const { Option } = Select;
-
-// ====== Styled Stats Card ======
+// ... (Các component StatChip, StatsCard, PageHeader, CustomTooltip giữ nguyên, không cần thay đổi)
 const StatChip = ({ children, bg }: { children: React.ReactNode; bg: string }) => (
     <div style={{ width: 44, height: 44, borderRadius: 12, display: 'grid', placeItems: 'center', background: bg, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>{children}</div>
 );
@@ -47,22 +46,19 @@ const StatsCard = React.memo<{
     )
 );
 
-// ====== Page Header ======
+// Bạn có thể xóa nút "Làm mới" khỏi component PageHeader nếu muốn
 const PageHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
     <div className="sf-page-header">
         <div>
             <Title level={2} style={{ margin: 0 }}>{title}</Title>
             <Text type="secondary">{subtitle}</Text>
         </div>
-        <div className="sf-header-cta">
-            <Button icon={<BarChart3 size={16} />} type="default" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Làm mới</Button>
-        </div>
+        {/* Xóa nút bấm ở đây để chuyển ra ngoài */}
     </div>
 );
 
 interface AggregatedDataPoint { timestamp: string; avgValue?: number; }
 
-// ====== Custom Tooltip ======
 const CustomTooltip = ({ active, payload, label }: any) => {
     const { isDark } = useTheme();
     if (active && payload && payload.length) {
@@ -86,14 +82,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
+const { Title, Text } = Typography;
+const { Option } = Select;
+
 const DashboardPage: React.FC = () => {
     const { farmId, isLoadingFarm } = useFarm();
     const navigate = useNavigate();
-    const [summary, setSummary] = useState<FarmSummary | null>(null);
+    const queryClient = useQueryClient();
+
+    // ✅ BƯỚC 1: SỬ DỤNG REACT QUERY LÀM NGUỒN DỮ LIỆU DUY NHẤT
+    const { data: summary, isLoading: isLoadingSummary, isError, error } = useDashboardSummary(farmId!);
+    // Bỏ: const [summary, setSummary] = useState<FarmSummary | null>(null);
+    // Bỏ: const [loading, setLoading] = useState(true);
+
+    // Các state cục bộ khác cho UI (biểu đồ, select box) giữ nguyên
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [activeChart, setActiveChart] = useState<'env' | 'soil'>('env');
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [chartLoading, setChartLoading] = useState(false);
     const [devices, setDevices] = useState<Device[]>([]);
     const [selectedEnvDevice, setSelectedEnvDevice] = useState<string | undefined>(undefined);
@@ -104,40 +108,30 @@ const DashboardPage: React.FC = () => {
     const soilDevices = useMemo(() => devices.filter(d => d.type === 'SENSOR_SOIL_MOISTURE'), [devices]);
     const phDevices = useMemo(() => devices.filter(d => d.type === 'SENSOR_PH'), [devices]);
 
+    // ✅ BƯỚC 2: BỎ useEffect fetchData ban đầu, vì useDashboardSummary đã làm việc này rồi.
+    // Thay vào đó, dùng một useEffect riêng để fetch danh sách devices cho các select box.
     useEffect(() => {
-        if (farmId === null) {
-            setSummary(null); setChartData([]); setDevices([]);
-            setSelectedEnvDevice(undefined); setSelectedSoilDevice(undefined); setSelectedPHDevice(undefined);
-            setError(null); setLoading(false);
-        }
-    }, [farmId]);
-
-    useEffect(() => {
+        if (!farmId) return;
         let isMounted = true;
-        const fetchData = async () => {
-            if (!farmId) { setLoading(false); return; }
+        const fetchDeviceList = async () => {
             try {
-                setLoading(true);
-                const [devicesRes, summaryRes] = await Promise.all([
-                    getDevicesByFarm(farmId),
-                    api.get<{ data: FarmSummary }>(`/reports/summary?farmId=${farmId}`)
-                ]);
+                const devicesRes = await getDevicesByFarm(farmId);
                 if (isMounted) {
                     const deviceList = devicesRes.data.data || [];
-                    setDevices(deviceList); setSummary(summaryRes.data.data);
+                    setDevices(deviceList);
                     if (!selectedEnvDevice) setSelectedEnvDevice(deviceList.find(d => d.type === 'SENSOR_DHT22')?.deviceId);
                     if (!selectedSoilDevice) setSelectedSoilDevice(deviceList.find(d => d.type === 'SENSOR_SOIL_MOISTURE')?.deviceId);
                     if (!selectedPHDevice) setSelectedPHDevice(deviceList.find(d => d.type === 'SENSOR_PH')?.deviceId);
-                    setError(null);
                 }
             } catch (err) {
-                if (isMounted) { console.error('Failed to fetch initial data:', err); setError('Không thể tải dữ liệu. Vui lòng thử lại.'); }
-            } finally { if (isMounted) setLoading(false); }
+                console.error('Failed to fetch device list:', err);
+            }
         };
-        fetchData();
-        return () => { isMounted = false; };
+        fetchDeviceList();
+        return () => { isMounted = false };
     }, [farmId]);
 
+    // ... (logic fetchChartData, mergeChartData giữ nguyên) ...
     const mergeChartData = (data1: AggregatedDataPoint[], data2: AggregatedDataPoint[], key1: string, key2: string): ChartDataPoint[] => {
         const dataMap = new Map<string, ChartDataPoint>();
         data1.forEach(p => {
@@ -150,6 +144,25 @@ const DashboardPage: React.FC = () => {
         });
         return Array.from(dataMap.values()).sort((a, b) => a.time.localeCompare(b.time));
     };
+
+    // VVVV--- TẠO MỘT HÀM XỬ LÝ LÀM MỚI ---VVVV
+    const handleRefresh = () => {
+        message.loading({ content: 'Đang làm mới dữ liệu...', key: 'refresh' });
+
+        // Vô hiệu hóa tất cả các query liên quan đến dashboard của farm này
+        // React Query sẽ tự động fetch lại chúng
+        queryClient.invalidateQueries({ queryKey: ['dashboard-summary', farmId] });
+        queryClient.invalidateQueries({ queryKey: ['chart-data'] }); // Làm mới cả biểu đồ
+
+        // Bạn cũng có thể gọi hàm fetchChartData thủ công nếu muốn
+        // fetchChartData();
+
+        // Giả lập một chút độ trễ để người dùng thấy thông báo
+        setTimeout(() => {
+            message.success({ content: 'Dữ liệu đã được làm mới!', key: 'refresh', duration: 2 });
+        }, 1000);
+    };
+    // ^^^^----------------------------------^^^^
 
     const fetchChartData = useCallback(async () => {
         setChartLoading(true); setChartData([]);
@@ -173,34 +186,57 @@ const DashboardPage: React.FC = () => {
 
     useEffect(() => { fetchChartData(); }, [fetchChartData]);
 
+
+    // ✅ BƯỚC 3: SỬA LẠI HOÀN TOÀN useEffect của WebSocket
     useEffect(() => {
         if (farmId === null) return;
-        const token = getAuthToken(); if (!token) return;
+        const token = getAuthToken();
+        if (!token) return;
+
         const client = new Client({
             webSocketFactory: () => new SockJS(`${import.meta.env.VITE_WS_URL}`),
-            connectHeaders: { Authorization: `Bearer ${token}` }, reconnectDelay: 5000,
+            connectHeaders: { Authorization: `Bearer ${token}` },
+            reconnectDelay: 5000,
         });
+
         client.onConnect = () => {
+            console.log('Dashboard WebSocket Connected!');
+
+            // Listener 1: Cập nhật dữ liệu CẢM BIẾN (Optimistic Update)
             client.subscribe(`/topic/farm/${farmId}/sensor-data`, (msg) => {
                 try {
                     const newData: SensorDataMessage = JSON.parse(msg.body);
-                    setSummary((prev) => {
-                        if (!prev) return null;
-                        const newAvg = { ...prev.averageEnvironment };
-                        if (newData.temperature !== undefined) newAvg.avgTemperature = newData.temperature;
-                        if (newData.humidity !== undefined) newAvg.avgHumidity = newData.humidity;
-                        if (newData.soilMoisture !== undefined) newAvg.avgSoilMoisture = newData.soilMoisture;
-                        if (newData.soilPH !== undefined) newAvg.avgSoilPH = newData.soilPH;
-                        if (newData.lightIntensity !== undefined) newAvg.avgLightIntensity = newData.lightIntensity;
-                        return { ...prev, averageEnvironment: newAvg } as FarmSummary;
-                    });
-                } catch (e) { console.error('Error processing WebSocket message:', e); }
+
+                    queryClient.setQueryData(
+                        ['dashboard-summary', farmId],
+                        (oldData: FarmSummary | undefined) => {
+                            if (!oldData) return oldData;
+
+                            const newAvgEnv = { ...oldData.averageEnvironment };
+                            if (newData.temperature !== undefined) newAvgEnv.avgTemperature = newData.temperature;
+                            if (newData.humidity !== undefined) newAvgEnv.avgHumidity = newData.humidity;
+                            if (newData.soilMoisture !== undefined) newAvgEnv.avgSoilMoisture = newData.soilMoisture;
+                            if (newData.soilPH !== undefined) newAvgEnv.avgSoilPH = newData.soilPH;
+                            if (newData.lightIntensity !== undefined) newAvgEnv.avgLightIntensity = newData.lightIntensity;
+
+                            return { ...oldData, averageEnvironment: newAvgEnv };
+                        }
+                    );
+                } catch (e) { console.error('Error processing sensor data message:', e); }
+            });
+
+            // Listener 2: Cập nhật số liệu TỔNG QUAN (online devices)
+            client.subscribe(`/topic/farm/${farmId}/device-status`, (msg) => {
+                console.log('Received device status update on Dashboard, refetching summary...');
+                queryClient.invalidateQueries({ queryKey: ['dashboard-summary', farmId] });
             });
         };
+
         client.activate();
         return () => { if (client.active) client.deactivate(); };
-    }, [farmId]);
+    }, [farmId, queryClient]);
 
+    // ... (statsCards giữ nguyên, không cần thay đổi) ...
     const statsCards = useMemo(() => (
         <Row gutter={[16, 16]}>
             <Col xs={12} sm={12} md={8}>
@@ -231,14 +267,24 @@ const DashboardPage: React.FC = () => {
         </Row>
     ), [summary]);
 
+    // ✅ BƯỚC 4: SỬA LẠI CÁCH XỬ LÝ LOADING VÀ ERROR
     if (isLoadingFarm) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spin size="large" /></div>;
     if (!farmId) return <Result status="info" title="Chưa có nông trại" subTitle="Vui lòng tạo hoặc chọn nông trại để xem dữ liệu." extra={<Button type="primary" onClick={() => navigate('/farms')}>Quản lý Nông trại</Button>} />;
-    if (loading && !summary) return <DashboardSkeleton />;
-    if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: 20 }} />;
+    if (isLoadingSummary && !summary) return <DashboardSkeleton />;
+    if (isError) return <Alert message="Lỗi tải dữ liệu" description={(error as Error).message} type="error" showIcon style={{ margin: 20 }} />;
 
+    // ... (phần return JSX giữ nguyên, không cần thay đổi) ...
     return (
         <div className="sf-wrapper">
             <PageHeader title="Dashboard Tổng Quan" subtitle="Phân tích dữ liệu thời gian thực từ các cảm biến." />
+
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '18px' }}>
+                <Button icon={<BarChart3 size={16} />} type="default" onClick={handleRefresh}>
+                    Làm mới
+                </Button>
+            </div>
+
 
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={16}>
@@ -347,15 +393,14 @@ const DashboardPage: React.FC = () => {
                 </Col>
             </Row>
 
-            {/* Scoped styles for dashboard */}
             <style>{`
-        .sf-wrapper { padding-bottom: 12px; }
-        .sf-page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
-        .sf-header-cta { display:flex; gap: 8px; }
-        .sf-card { border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
-        .sf-chart-header { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 8px; }
-        @media (max-width: 576px) { .sf-chart-header { flex-direction: column; align-items: flex-start; } }
-      `}</style>
+                .sf-wrapper { padding-bottom: 12px; }
+                .sf-page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+                .sf-header-cta { display:flex; gap: 8px; }
+                .sf-card { border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+                .sf-chart-header { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 8px; }
+                @media (max-width: 576px) { .sf-chart-header { flex-direction: column; align-items: flex-start; } }
+            `}</style>
         </div>
     );
 };
