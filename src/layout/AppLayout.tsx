@@ -1,14 +1,14 @@
 // src/layout/AppLayout.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, PropsWithChildren } from 'react';
 import {
     LayoutDashboard, HardDrive, Settings, User, Trees, BrainCircuit, Bot, HeartPulse, Crown
-} from 'lucide-react'; // ✅ Dùng lucide-react cho icon menu hiện đại, đồng bộ
+} from 'lucide-react';
 import type { MenuProps } from 'antd';
 import { Layout, Menu, theme, notification } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import AppHeader from './AppHeader';
-import AppFooter from './AppFooter'; // Đảm bảo import AppFooter
+import AppFooter from './AppFooter';
 import { getUserFromStorage } from '../utils/auth';
 import PageBreadcrumb from '../components/PageBreadcrumb';
 import { BellOutlined } from '@ant-design/icons';
@@ -18,16 +18,26 @@ const { Content, Sider } = Layout;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-function getItem(label: React.ReactNode, key: React.Key, icon?: React.ReactNode, children?: MenuItem[]): MenuItem {
+function getItem(
+    label: React.ReactNode,
+    key: React.Key,
+    icon?: React.ReactNode,
+    children?: MenuItem[]
+): MenuItem {
     return { key, icon, children, label } as MenuItem;
 }
 
-const AppLayout: React.FC = () => {
+// ✅ Cho phép nhận children, tương thích cả 2 cách dùng:
+// 1) <AppLayout><SomePage/></AppLayout>
+// 2) element={<AppLayout/>} + <Outlet/>
+const AppLayout: React.FC<PropsWithChildren> = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const { isDark } = useTheme();
-    const { token: { colorBgContainer } } = theme.useToken();
+    const {
+        token: { colorBgContainer }
+    } = theme.useToken();
 
     const user = getUserFromStorage();
     const isAdmin = user?.roles?.includes('ADMIN');
@@ -35,24 +45,26 @@ const AppLayout: React.FC = () => {
 
     useEffect(() => {
         if (isConnected && stompClient && user) {
-            const subscription = stompClient.subscribe(`/topic/user/${user.userId}/notifications`, (message) => {
-                try {
-                    const notificationData = JSON.parse(message.body);
-                    notification.open({
-                        message: notificationData.title,
-                        description: notificationData.message,
-                        icon: <BellOutlined style={{ color: '#108ee9' }} />,
-                        placement: 'bottomRight',
-                    });
-                } catch (error) {
-                    console.error('Failed to parse notification message:', error);
+            const subscription = stompClient.subscribe(
+                `/topic/user/${user.userId}/notifications`,
+                (message) => {
+                    try {
+                        const notificationData = JSON.parse(message.body);
+                        notification.open({
+                            message: notificationData.title,
+                            description: notificationData.message,
+                            icon: <BellOutlined style={{ color: '#108ee9' }} />,
+                            placement: 'bottomRight'
+                        });
+                    } catch (error) {
+                        console.error('Failed to parse notification message:', error);
+                    }
                 }
-            });
+            );
             return () => subscription.unsubscribe();
         }
     }, [isConnected, stompClient, user]);
 
-    // ✅ Menu items với icon mới
     const menuItems: MenuItem[] = [
         getItem('Dashboard', '/dashboard', <LayoutDashboard size={16} />),
         getItem('Dự đoán AI', '/ai', <BrainCircuit size={16} />),
@@ -60,15 +72,16 @@ const AppLayout: React.FC = () => {
         getItem('Sức khỏe Cây trồng', '/plant-health', <HeartPulse size={16} />),
         getItem('Quản lý Nông trại', '/farms', <Trees size={16} />),
         getItem('Quản lý Thiết bị', '/devices', <HardDrive size={16} />),
-        isAdmin && getItem('Admin Panel', 'sub_admin', <Crown size={16} />, [
+        isAdmin &&
+        getItem('Admin Panel', 'sub_admin', <Crown size={16} />, [
             getItem('Dashboard', '/admin/dashboard'),
-            getItem('Quản lý Người dùng', '/admin/users'),
+            getItem('Quản lý Người dùng', '/admin/users')
         ]),
         getItem('Tài khoản', 'sub_user', <User size={16} />, [
             getItem('Thông tin cá nhân', '/profile'),
-            getItem('Đổi mật khẩu', '/change-password'),
+            getItem('Đổi mật khẩu', '/change-password')
         ]),
-        getItem('Cài đặt', '/settings', <Settings size={16} />),
+        getItem('Cài đặt', '/settings', <Settings size={16} />)
     ].filter(Boolean) as MenuItem[];
 
     return (
@@ -78,7 +91,7 @@ const AppLayout: React.FC = () => {
                 collapsed={collapsed}
                 onCollapse={(value) => setCollapsed(value)}
                 theme={isDark ? 'dark' : 'light'}
-                width={220} // ✅ Tăng chiều rộng sider một chút
+                width={220}
                 style={{
                     overflow: 'auto',
                     height: '100vh',
@@ -86,11 +99,27 @@ const AppLayout: React.FC = () => {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    zIndex: 100,
+                    zIndex: 100
                 }}
             >
-                <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-                    <div className="gradient-text" style={{ fontWeight: 'bold', fontSize: collapsed ? '24px' : '22px', transition: 'all 0.3s', whiteSpace: 'nowrap' }}>
+                <div
+                    style={{
+                        height: 64,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '16px'
+                    }}
+                >
+                    <div
+                        className="gradient-text"
+                        style={{
+                            fontWeight: 'bold',
+                            fontSize: collapsed ? '24px' : '22px',
+                            transition: 'all 0.3s',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
                         {collapsed ? 'SF' : 'SmartFarm'}
                     </div>
                 </div>
@@ -99,16 +128,17 @@ const AppLayout: React.FC = () => {
                     selectedKeys={[location.pathname]}
                     mode="inline"
                     items={menuItems}
-                    onClick={({ key }) => navigate(key)}
+                    onClick={({ key }) => navigate(String(key))}
                 />
             </Sider>
 
             <Layout style={{ marginLeft: collapsed ? 80 : 220, transition: 'margin-left 0.2s' }}>
                 <AppHeader />
-                <Content style={{ margin: '24px 16px', overflow: 'initial' }}>
+                <Content style={{ margin: '24px 16px', overflow: 'initial', background: colorBgContainer }}>
                     <PageBreadcrumb />
                     <div className="app-content" key={location.pathname}>
-                        <Outlet />
+                        {/* Nếu có children thì dùng children; nếu không thì dùng Outlet */}
+                        {children ?? <Outlet />}
                     </div>
                 </Content>
                 <AppFooter />

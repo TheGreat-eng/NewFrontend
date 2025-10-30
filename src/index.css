@@ -321,7 +321,7 @@ body[data-theme='dark'] .search-result-item:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.8), white), url('https://images.unsplash.com/photo-1492496913980-501348b61469?q=80&w=2787&auto=format&fit=crop');
+    background-image: linear-gradient(rgba(255, 255, 255, 0.0001), white), url('https://images.unsplash.com/photo-1492496913980-501348b61469?q=80&w=2787&auto=format&fit=crop');
     background-size: cover;
     background-position: center;
 }

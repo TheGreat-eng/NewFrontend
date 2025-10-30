@@ -1,7 +1,7 @@
-// src/pages/DashboardPage.tsx
+// src/pages/DashboardPage.tsx — Revamped UI/UX (kept logic & APIs intact)
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space, Empty } from 'antd';
+import { Row, Col, Card, Statistic, Spin, Alert, Typography, Tabs, message, Result, Button, Select, Space, Empty, Tag } from 'antd';
 import { Thermometer, Droplet, Sun, Wifi, BarChart3, Beaker, Leaf } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Client } from '@stomp/stompjs';
@@ -20,21 +20,26 @@ import { useTheme } from '../context/ThemeContext';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// THIẾT KẾ LẠI STATS CARD THEO PHONG CÁCH MỚI
-const StatsCard = React.memo<{ title: string; value: number | string; icon: React.ReactNode; suffix?: string; precision?: number }>(
-    ({ title, value, icon, suffix, precision }) => (
-        <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+// ====== Styled Stats Card ======
+const StatChip = ({ children, bg }: { children: React.ReactNode; bg: string }) => (
+    <div style={{ width: 44, height: 44, borderRadius: 12, display: 'grid', placeItems: 'center', background: bg, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>{children}</div>
+);
+
+const StatsCard = React.memo<{
+    title: string;
+    value: number | string;
+    icon: React.ReactNode;
+    suffix?: string;
+    precision?: number;
+    hint?: string;
+}>(
+    ({ title, value, icon, suffix, precision, hint }) => (
+        <Card className="sf-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                 <div>
                     <Text type="secondary" style={{ textTransform: 'uppercase', fontSize: 12, fontWeight: 600 }}>{title}</Text>
-                    <Statistic
-                        value={value}
-                        precision={precision}
-                        suffix={suffix}
-                        // ✅ FIX: Bỏ đi thuộc tính `color` cố định.
-                        // Các con số sẽ tự động nhận màu phù hợp với theme (sáng hoặc tối).
-                        valueStyle={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}
-                    />
+                    <Statistic value={value} precision={precision} suffix={suffix} valueStyle={{ fontSize: 28, fontWeight: 800, marginTop: 6 }} />
+                    {hint && <div style={{ marginTop: 6 }}><Tag color="blue" style={{ borderRadius: 999 }}>{hint}</Tag></div>}
                 </div>
                 {icon}
             </div>
@@ -42,36 +47,37 @@ const StatsCard = React.memo<{ title: string; value: number | string; icon: Reac
     )
 );
 
-// Helper component để chuẩn hóa tiêu đề trang
+// ====== Page Header ======
 const PageHeader = ({ title, subtitle }: { title: string, subtitle: string }) => (
-    <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0 }}>{title}</Title>
-        <Text type="secondary">{subtitle}</Text>
+    <div className="sf-page-header">
+        <div>
+            <Title level={2} style={{ margin: 0 }}>{title}</Title>
+            <Text type="secondary">{subtitle}</Text>
+        </div>
+        <div className="sf-header-cta">
+            <Button icon={<BarChart3 size={16} />} type="default" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Làm mới</Button>
+        </div>
     </div>
 );
 
-interface AggregatedDataPoint {
-    timestamp: string;
-    avgValue?: number;
-}
+interface AggregatedDataPoint { timestamp: string; avgValue?: number; }
 
-// TẠO CUSTOM TOOLTIP ĐẸP HƠN
+// ====== Custom Tooltip ======
 const CustomTooltip = ({ active, payload, label }: any) => {
     const { isDark } = useTheme();
     if (active && payload && payload.length) {
         return (
             <div style={{
-                background: isDark ? 'var(--card-dark)' : 'var(--card-light)',
-                padding: '10px 15px',
-                borderRadius: 'var(--radius)',
-                border: `1px solid ${isDark ? 'var(--border-dark)' : 'var(--border-light)'}`,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                background: isDark ? 'var(--card-dark, #0f172a)' : 'var(--card-light, #ffffff)',
+                padding: '10px 14px', borderRadius: 12,
+                border: `1px solid ${isDark ? 'var(--border-dark, #1f2937)' : 'var(--border-light, #eef2f7)'}`,
+                boxShadow: '0 6px 18px rgba(0,0,0,0.08)'
             }}>
-                <p style={{ fontWeight: 600, marginBottom: 8 }}>{`Thời gian: ${label}`}</p>
+                <p style={{ fontWeight: 700, marginBottom: 8 }}>{`Thời gian: ${label}`}</p>
                 {payload.map((pld: any) => (
-                    <div key={pld.dataKey} style={{ color: pld.stroke, display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+                    <div key={pld.dataKey} style={{ color: pld.stroke, display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                         <span>{pld.name}:</span>
-                        <strong>{`${pld.value.toFixed(1)} ${pld.unit || ''}`}</strong>
+                        <strong>{`${Number.isFinite(pld.value) ? Number(pld.value).toFixed(1) : '--'} ${pld.unit || ''}`}</strong>
                     </div>
                 ))}
             </div>
@@ -117,15 +123,16 @@ const DashboardPage: React.FC = () => {
                     api.get<{ data: FarmSummary }>(`/reports/summary?farmId=${farmId}`)
                 ]);
                 if (isMounted) {
-                    const deviceList = devicesRes.data.data;
+                    const deviceList = devicesRes.data.data || [];
                     setDevices(deviceList); setSummary(summaryRes.data.data);
                     if (!selectedEnvDevice) setSelectedEnvDevice(deviceList.find(d => d.type === 'SENSOR_DHT22')?.deviceId);
                     if (!selectedSoilDevice) setSelectedSoilDevice(deviceList.find(d => d.type === 'SENSOR_SOIL_MOISTURE')?.deviceId);
                     if (!selectedPHDevice) setSelectedPHDevice(deviceList.find(d => d.type === 'SENSOR_PH')?.deviceId);
                     setError(null);
                 }
-            } catch (err) { if (isMounted) { console.error("Failed to fetch initial data:", err); setError("Không thể tải dữ liệu. Vui lòng thử lại."); } }
-            finally { if (isMounted) setLoading(false); }
+            } catch (err) {
+                if (isMounted) { console.error('Failed to fetch initial data:', err); setError('Không thể tải dữ liệu. Vui lòng thử lại.'); }
+            } finally { if (isMounted) setLoading(false); }
         };
         fetchData();
         return () => { isMounted = false; };
@@ -160,7 +167,7 @@ const DashboardPage: React.FC = () => {
                 ]);
                 setChartData(mergeChartData(soilMoistureRes.data.data, soilPHRes.data.data, 'soilMoisture', 'soilPH'));
             }
-        } catch (err) { console.error(`Failed to fetch chart data:`, err); message.error(`Không thể tải dữ liệu biểu đồ.`); }
+        } catch (err) { console.error('Failed to fetch chart data:', err); message.error('Không thể tải dữ liệu biểu đồ.'); }
         finally { setChartLoading(false); }
     }, [activeChart, selectedEnvDevice, selectedSoilDevice, selectedPHDevice]);
 
@@ -185,9 +192,9 @@ const DashboardPage: React.FC = () => {
                         if (newData.soilMoisture !== undefined) newAvg.avgSoilMoisture = newData.soilMoisture;
                         if (newData.soilPH !== undefined) newAvg.avgSoilPH = newData.soilPH;
                         if (newData.lightIntensity !== undefined) newAvg.avgLightIntensity = newData.lightIntensity;
-                        return { ...prev, averageEnvironment: newAvg };
+                        return { ...prev, averageEnvironment: newAvg } as FarmSummary;
                     });
-                } catch (e) { console.error("Error processing WebSocket message:", e); }
+                } catch (e) { console.error('Error processing WebSocket message:', e); }
             });
         };
         client.activate();
@@ -195,57 +202,160 @@ const DashboardPage: React.FC = () => {
     }, [farmId]);
 
     const statsCards = useMemo(() => (
-        <Row gutter={[24, 24]}>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} icon={<Wifi size={24} color="#10b981" />} suffix={` / ${summary?.totalDevices ?? 0}`} /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Nhiệt độ" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} icon={<Thermometer size={24} color="#ef4444" />} suffix="°C" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} icon={<Droplet size={24} color="#3b82f6" />} suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} icon={<Leaf size={24} color="#84cc16" />} suffix="%" /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2} icon={<Beaker size={24} color="#f59e0b" />} /></Col>
-            <Col xs={12} sm={12} md={8}><StatsCard title="Ánh sáng" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} icon={<Sun size={24} color="#f97316" />} suffix=" lux" /></Col>
+        <Row gutter={[16, 16]}>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Thiết bị Online" value={summary?.onlineDevices ?? 0} suffix={` / ${summary?.totalDevices ?? 0}`}
+                    hint={summary?.onlineDevices ? 'Đang hoạt động' : undefined}
+                    icon={<StatChip bg="rgba(16,185,129,0.15)"><Wifi size={22} color="#10b981" /></StatChip>} />
+            </Col>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Nhiệt độ" value={summary?.averageEnvironment?.avgTemperature ?? 0} precision={1} suffix="°C"
+                    icon={<StatChip bg="rgba(239,68,68,0.14)"><Thermometer size={22} color="#ef4444" /></StatChip>} />
+            </Col>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Độ ẩm KK" value={summary?.averageEnvironment?.avgHumidity ?? 0} precision={1} suffix="%"
+                    icon={<StatChip bg="rgba(59,130,246,0.14)"><Droplet size={22} color="#3b82f6" /></StatChip>} />
+            </Col>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Độ ẩm Đất" value={summary?.averageEnvironment?.avgSoilMoisture ?? 0} precision={1} suffix="%"
+                    icon={<StatChip bg="rgba(132,204,22,0.14)"><Leaf size={22} color="#84cc16" /></StatChip>} />
+            </Col>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Độ pH Đất" value={summary?.averageEnvironment?.avgSoilPH ?? 0} precision={2}
+                    icon={<StatChip bg="rgba(245,158,11,0.16)"><Beaker size={22} color="#f59e0b" /></StatChip>} />
+            </Col>
+            <Col xs={12} sm={12} md={8}>
+                <StatsCard title="Ánh sáng" value={summary?.averageEnvironment?.avgLightIntensity ?? 0} precision={0} suffix=" lux"
+                    icon={<StatChip bg="rgba(249,115,22,0.16)"><Sun size={22} color="#f97316" /></StatChip>} />
+            </Col>
         </Row>
     ), [summary]);
 
     if (isLoadingFarm) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spin size="large" /></div>;
     if (!farmId) return <Result status="info" title="Chưa có nông trại" subTitle="Vui lòng tạo hoặc chọn nông trại để xem dữ liệu." extra={<Button type="primary" onClick={() => navigate('/farms')}>Quản lý Nông trại</Button>} />;
     if (loading && !summary) return <DashboardSkeleton />;
-    if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: '20px' }} />;
+    if (error) return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: 20 }} />;
 
     return (
-        <div>
+        <div className="sf-wrapper">
             <PageHeader title="Dashboard Tổng Quan" subtitle="Phân tích dữ liệu thời gian thực từ các cảm biến." />
+
             <Row gutter={[24, 24]}>
                 <Col xs={24} lg={16}>
                     {statsCards}
-                    <Card style={{ marginTop: 24 }}>
-                        <Tabs defaultActiveKey="env" onChange={(k) => setActiveChart(k as 'env' | 'soil')} items={[{ key: 'env', label: 'Môi trường (Không khí)' }, { key: 'soil', label: 'Dữ liệu Đất' }]} />
+
+                    <Card className="sf-card" style={{ marginTop: 24 }}>
+                        <div className="sf-chart-header">
+                            <Tabs
+                                defaultActiveKey="env"
+                                activeKey={activeChart}
+                                onChange={(k) => setActiveChart(k as 'env' | 'soil')}
+                                items={[
+                                    { key: 'env', label: 'Môi trường (Không khí)' },
+                                    { key: 'soil', label: 'Dữ liệu Đất' },
+                                ]}
+                            />
+                            <Space wrap>
+                                {activeChart === 'env' && (
+                                    <Select
+                                        value={selectedEnvDevice}
+                                        placeholder="Chọn thiết bị môi trường"
+                                        style={{ minWidth: 220 }}
+                                        onChange={(v) => setSelectedEnvDevice(v)}
+                                    >
+                                        {envDevices.map(d => (<Option key={d.deviceId} value={d.deviceId}>{d.name || d.deviceId}</Option>))}
+                                    </Select>
+                                )}
+                                {activeChart === 'soil' && (
+                                    <>
+                                        <Select
+                                            value={selectedSoilDevice}
+                                            placeholder="Thiết bị Soil Moisture"
+                                            style={{ minWidth: 200 }}
+                                            onChange={(v) => setSelectedSoilDevice(v)}
+                                        >
+                                            {soilDevices.map(d => (<Option key={d.deviceId} value={d.deviceId}>{d.name || d.deviceId}</Option>))}
+                                        </Select>
+                                        <Select
+                                            value={selectedPHDevice}
+                                            placeholder="Thiết bị pH"
+                                            style={{ minWidth: 180 }}
+                                            onChange={(v) => setSelectedPHDevice(v)}
+                                        >
+                                            {phDevices.map(d => (<Option key={d.deviceId} value={d.deviceId}>{d.name || d.deviceId}</Option>))}
+                                        </Select>
+                                    </>
+                                )}
+                                <Button icon={<BarChart3 size={16} />} onClick={fetchChartData}>Tải lại dữ liệu</Button>
+                            </Space>
+                        </div>
+
                         {chartLoading ? (
                             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 350 }}><Spin /></div>
                         ) : chartData.length === 0 ? (
                             <Empty description="Không có dữ liệu biểu đồ" style={{ height: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }} />
                         ) : (
-                            <ResponsiveContainer width="100%" height={350}>
-                                <AreaChart data={chartData}>
+                            <ResponsiveContainer width="100%" height={360}>
+                                <AreaChart data={chartData} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} /><stop offset="95%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
-                                        <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+                                        <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.85} />
+                                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorHumid" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.85} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorSoil" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#84cc16" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#84cc16" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorPH" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                                        </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
-                                    <XAxis dataKey="time" stroke="var(--muted-foreground-light)" />
-                                    <YAxis yAxisId="left" stroke="#ef4444" />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend />
-                                    <Area yAxisId="left" type="monotone" dataKey="temperature" name="Nhiệt độ" unit="°C" stroke="#ef4444" fillOpacity={1} fill="url(#colorTemp)" strokeWidth={2} />
-                                    <Area yAxisId="right" type="monotone" dataKey="humidity" name="Độ ẩm" unit="%" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHumid)" strokeWidth={2} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light, #eef2f7)" />
+                                    <XAxis dataKey="time" stroke="var(--muted-foreground-light, #64748b)" />
+                                    {activeChart === 'env' ? (
+                                        <>
+                                            <YAxis yAxisId="left" stroke="#ef4444" />
+                                            <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Area yAxisId="left" type="monotone" dataKey="temperature" name="Nhiệt độ" unit="°C" stroke="#ef4444" fillOpacity={1} fill="url(#colorTemp)" strokeWidth={2} dot={false} />
+                                            <Area yAxisId="right" type="monotone" dataKey="humidity" name="Độ ẩm" unit="%" stroke="#3b82f6" fillOpacity={1} fill="url(#colorHumid)" strokeWidth={2} dot={false} />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <YAxis yAxisId="left" stroke="#84cc16" />
+                                            <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" />
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Legend />
+                                            <Area yAxisId="left" type="monotone" dataKey="soilMoisture" name="Độ ẩm đất" unit="%" stroke="#84cc16" fill="url(#colorSoil)" strokeWidth={2} dot={false} />
+                                            <Area yAxisId="right" type="monotone" dataKey="soilPH" name="Độ pH" unit="" stroke="#f59e0b" fill="url(#colorPH)" strokeWidth={2} dot={false} />
+                                        </>
+                                    )}
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}
                     </Card>
                 </Col>
+
                 <Col xs={24} lg={8}>
                     <WeatherWidget />
                 </Col>
             </Row>
+
+            {/* Scoped styles for dashboard */}
+            <style>{`
+        .sf-wrapper { padding-bottom: 12px; }
+        .sf-page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+        .sf-header-cta { display:flex; gap: 8px; }
+        .sf-card { border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        .sf-chart-header { display:flex; align-items:center; justify-content:space-between; gap: 12px; margin-bottom: 8px; }
+        @media (max-width: 576px) { .sf-chart-header { flex-direction: column; align-items: flex-start; } }
+      `}</style>
         </div>
     );
 };
