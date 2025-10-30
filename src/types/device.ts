@@ -12,4 +12,5 @@ export interface Device {
     // VVVV--- THÊM DÒNG NÀY ---VVVV
     latestSensorData?: SensorDataMessage; // Lưu dữ liệu cảm biến mới nhất từ WebSocket
     // ^^^^-----------------------^^^^
+    currentState?: 'ON' | 'OFF' | null; // <-- THÊM DÒNG NÀY
 }

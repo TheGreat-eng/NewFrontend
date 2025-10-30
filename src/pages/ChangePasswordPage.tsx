@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
-import api from '../api/axiosConfig';
 import { changeMyPassword, type ChangePasswordData } from '../api/userService';
 
 

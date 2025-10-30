@@ -16,7 +16,7 @@ import { DashboardSkeleton } from '../components/LoadingSkeleton';
 import type { SensorDataMessage } from '../types/websocket';
 import { getAuthToken } from '../utils/auth';
 import { useTheme } from '../context/ThemeContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import đúng
+import { useQueryClient } from '@tanstack/react-query'; // Import đúng
 import { useDashboardSummary } from '../hooks/useDashboardData'; // Import hook
 
 // ... (Các component StatChip, StatsCard, PageHeader, CustomTooltip giữ nguyên, không cần thay đổi)
@@ -226,7 +226,7 @@ const DashboardPage: React.FC = () => {
             });
 
             // Listener 2: Cập nhật số liệu TỔNG QUAN (online devices)
-            client.subscribe(`/topic/farm/${farmId}/device-status`, (msg) => {
+            client.subscribe(`/topic/farm/${farmId}/device-status`, () => {
                 console.log('Received device status update on Dashboard, refetching summary...');
                 queryClient.invalidateQueries({ queryKey: ['dashboard-summary', farmId] });
             });

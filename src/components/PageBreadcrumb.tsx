@@ -45,11 +45,8 @@ const PageBreadcrumb: React.FC = () => {
     }).filter(Boolean);
 
     const breadcrumbItems = [
-        {
-            title: <Link to="/"><HomeOutlined /></Link>,
-            key: 'home',
-        },
-        ...extraBreadcrumbItems,
+        { title: <Link to="/"><HomeOutlined /></Link>, key: 'home' },
+        ...(extraBreadcrumbItems as any),
     ];
 
     // Chỉ hiển thị khi có nhiều hơn 1 item (Home)

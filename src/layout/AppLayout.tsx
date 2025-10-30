@@ -1,5 +1,5 @@
 // src/layout/AppLayout.tsx
-import React, { useEffect, useState, PropsWithChildren } from 'react';
+import React, { useEffect, useState, type PropsWithChildren } from 'react';
 import {
     LayoutDashboard, HardDrive, Settings, User, Trees, BrainCircuit, Bot, HeartPulse, Crown
 } from 'lucide-react';

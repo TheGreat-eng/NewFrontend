@@ -74,20 +74,20 @@ const ProfilePage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #f0f0f0' }}>
                     <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: '#667eea' }} />
                     <div style={{ marginLeft: 20 }}>
-                        <Title level={4} style={{ margin: 0 }}>{user.fullName}</Title>
+                        <Title level={4} style={{ margin: 0 }}>{user?.fullName}</Title>
 
 
 
 
-                        <Tag color="blue">{user.role}</Tag>
+                        <Tag color="blue">{user?.role}</Tag>
                     </div>
                 </div>
 
                 {/* User Details */}
                 <Descriptions bordered column={1}>
-                    <Descriptions.Item label={<Space><IdcardOutlined />User ID</Space>}><Text code>{user.id}</Text></Descriptions.Item>
-                    <Descriptions.Item label={<Space><MailOutlined />Email</Space>}>{user.email}</Descriptions.Item>
-                    <Descriptions.Item label={<Space><PhoneOutlined />Số điện thoại</Space>}>{user.phoneNumber || 'Chưa cập nhật'}</Descriptions.Item>
+                    <Descriptions.Item label={<Space><IdcardOutlined />User ID</Space>}><Text code>{user?.id}</Text></Descriptions.Item>
+                    <Descriptions.Item label={<Space><MailOutlined />Email</Space>}>{user?.email}</Descriptions.Item>
+                    <Descriptions.Item label={<Space><PhoneOutlined />Số điện thoại</Space>}>{user?.phoneNumber || 'Chưa cập nhật'}</Descriptions.Item>
                 </Descriptions>
 
                 {/* Action Buttons */}
@@ -108,7 +108,7 @@ const ProfilePage: React.FC = () => {
                     form={form}
                     layout="vertical"
                     onFinish={handleUpdate}
-                    initialValues={{ fullName: user.fullName, phoneNumber: user.phoneNumber }}
+                    initialValues={{ fullName: user?.fullName, phoneNumber: user?.phoneNumber }}
                 >
                     <Form.Item
                         name="fullName"

@@ -16,28 +16,38 @@ const CreateRulePage: React.FC = () => {
     const { farmId } = useFarm();
     const [form] = Form.useForm();
     const navigate = useNavigate();
-    const [devices, setDevices] = useState<Device[]>([]);
+    //const [devices, setDevices] = useState<Device[]>([]);
     const [sensors, setSensors] = useState<Device[]>([]);
     const [actuators, setActuators] = useState<Device[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchDevices = async () => {
+            if (!farmId) return;
             try {
                 const response = await getDevicesByFarm(farmId);
-                const allDevices = response.data.data;
-                setDevices(allDevices);
+                const allDevices: Device[] = response.data.data; // Lấy dữ liệu và gán vào biến cục bộ
+
+                // setDevices(allDevices); // <-- XÓA DÒNG NÀY
+
+                // Dùng trực tiếp biến 'allDevices' để set sensors và actuators
                 setSensors(allDevices.filter(d => d.type.startsWith('SENSOR')));
                 setActuators(allDevices.filter(d => d.type.startsWith('ACTUATOR')));
             } catch (error) {
                 console.error('Failed to fetch devices:', error);
+                message.error('Không thể tải danh sách thiết bị');
             }
         };
+
         fetchDevices();
     }, [farmId]);
 
     const onFinish = async (values: any) => {
         setLoading(true);
+        if (!farmId) { // <-- THÊM KIỂM TRA Ở ĐÂY
+            message.error("Vui lòng chọn một nông trại!");
+            return;
+        }
         const newRule: Rule = {
             ...values,
             enabled: true,

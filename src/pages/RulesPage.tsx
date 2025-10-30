@@ -1,8 +1,8 @@
 // src/pages/RulesPage.tsx
 
 import React, { useEffect, useState } from 'react';
-import { List, Switch, Button, Typography, Spin, message, Popconfirm, Alert, Card, Row, Col, Space, Tag, Empty } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowRightOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Switch, Button, Typography, Spin, message, Popconfirm, Alert, Card, Row, Col, Space, Tag, Empty } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getRulesByFarm, deleteRule, toggleRuleStatus } from '../api/ruleService'; // ✅ Import đầy đủ
 import type { Rule } from '../types/rule';

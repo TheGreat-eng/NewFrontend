@@ -19,7 +19,7 @@ const GlobalSearch: React.FC = () => {
     const navigate = useNavigate();
     const { setFarmId } = useFarm();
 
-    const { data, isLoading, isFetching } = useQuery({
+    const { data, isFetching } = useQuery({
         queryKey: ['globalSearch', debouncedQuery],
         queryFn: async () => {
             const res = await api.get<{ data: GlobalSearchResult }>(`/search?q=${debouncedQuery}`);

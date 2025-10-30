@@ -16,7 +16,7 @@ const UserManagementPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 500); // Debounce 500ms
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading } = useQuery({
         // Query key phụ thuộc vào cả phân trang và tìm kiếm
         queryKey: ['admin-users', pagination.current, pagination.pageSize, debouncedSearchTerm],
         queryFn: () => getAllUsers(pagination.current - 1, pagination.pageSize, debouncedSearchTerm).then(res => res.data.data),

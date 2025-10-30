@@ -1,7 +1,7 @@
 // src/pages/DevicesPage.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Space, Tag, message, Popconfirm, Input, Spin, Alert, Tooltip, Badge, Typography } from 'antd'; // Thêm Tooltip, Badge
+import { Table, Button, Space, Tag, Popconfirm, Input, Spin, Alert, Tooltip, Typography, Modal, message } from 'antd'; // Thêm Tooltip, Badge
 import { PlusOutlined, DownloadOutlined, EditOutlined, DeleteOutlined, SyncOutlined, ThunderboltOutlined, WifiOutlined as WifiIcon, StopOutlined } from '@ant-design/icons';
 import { getDevicesByFarm, createDevice, updateDevice, deleteDevice, controlDevice } from '../api/deviceService';
 import type { Device } from '../types/device';
@@ -13,7 +13,7 @@ import { DEVICE_STATUS, DEVICE_STATE, getDeviceTypeLabel } from '../constants/de
 import { SUCCESS_MESSAGES } from '../constants/messages';
 import { useDebounce } from '../hooks/useDebounce';
 import { exportDeviceDataAsCsv } from '../api/reportService';
-
+import { message as antdMessage } from 'antd';
 
 import { useStomp } from '../hooks/useStomp'; // ✅ Import hook useStomp
 import type { DeviceStatusMessage } from '../types/websocket';
@@ -66,7 +66,7 @@ const DevicesPage: React.FC = () => {
                         );
 
                         // Hiển thị một thông báo nhỏ (tùy chọn)
-                        message.info(`Thiết bị ${statusUpdate.deviceId} đã ${statusUpdate.status.toLowerCase()}.`, 2);
+                        antdMessage.info(`Thiết bị ${statusUpdate.deviceId} đã ${statusUpdate.status.toLowerCase()}.`, 2);
 
                     } catch (error) {
                         console.error('Failed to parse device status message:', error);
@@ -162,10 +162,10 @@ const DevicesPage: React.FC = () => {
             await saveDeviceApi(async () => {
                 if (editingDevice) {
                     await updateDevice(editingDevice.id, values);
-                    message.success(SUCCESS_MESSAGES.DEVICE_UPDATED);
+                    antdMessage.success(SUCCESS_MESSAGES.DEVICE_UPDATED);
                 } else {
                     await createDevice(farmId, values);
-                    message.success(SUCCESS_MESSAGES.DEVICE_CREATED);
+                    antdMessage.success(SUCCESS_MESSAGES.DEVICE_CREATED);
                 }
             });
             handleCancel();
@@ -217,7 +217,7 @@ const DevicesPage: React.FC = () => {
 
         try {
             await controlDevice(deviceId, action);
-            message.success(`Đã ${action === 'turn_on' ? 'bật' : 'tắt'} thiết bị ${deviceId}`);
+            antdMessage.success(`Đã ${action === 'turn_on' ? 'bật' : 'tắt'} thiết bị ${deviceId}`);
             setTimeout(fetchDevices, 1000);
         } catch (error) {
             // ✅ ROLLBACK AN TOÀN HƠN

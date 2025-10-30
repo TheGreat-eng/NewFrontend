@@ -1,12 +1,12 @@
 // src/App.tsx
-import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Spin } from 'antd';
 import AppLayout from './layout/AppLayout';
 import NotFoundPage from './pages/NotFoundPage';
 import PrivateRoute from './components/PrivateRoute';
 import NetworkStatus from './components/NetworkStatus';
-import { isAuthenticated } from './utils/auth';
+
 
 // ✅ Lazy load các trang
 const LandingPage = lazy(() => import('./pages/LandingPage')); // ✅ THÊM LANDING PAGE

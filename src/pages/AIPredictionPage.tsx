@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Spin, Typography, Result, Button, Empty, Alert, Upload, message as antdMessage, Modal, Image } from 'antd';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { BulbOutlined, WarningOutlined, CameraOutlined, CloudUploadOutlined } from '@ant-design/icons';
-import type { UploadFile, RcFile } from 'antd/es/upload/interface';
+import type { RcFile } from 'antd/es/upload/interface';
 import { getAIPredictions, diagnosePlantDisease } from '../api/aiService';
 import type { AIPredictionResponse } from '../types/ai';
 import { useFarm } from '../context/FarmContext';

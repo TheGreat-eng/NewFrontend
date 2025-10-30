@@ -6,6 +6,8 @@ import { ArrowRight, BarChart, Bot, BrainCircuit } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { isAuthenticated } from '../utils/auth';
 import AppFooter from '../layout/AppFooter';
+import { type Easing } from 'framer-motion';
+
 
 const { Title, Paragraph } = Typography;
 
@@ -32,7 +34,11 @@ const floatVariant = {
     animate: {
         y: [0, -10, 0],
         opacity: [0.6, 0.85, 0.6],
-        transition: { duration: 6, repeat: Infinity, ease: 'easeInOut' },
+        transition: {
+            duration: 6,
+            repeat: Infinity,
+            ease: 'easeInOut' as Easing // ✅ SỬA LẠI DÒNG NÀY
+        },
     },
 };
 

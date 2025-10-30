@@ -1,6 +1,6 @@
 // src/pages/FarmsPage.tsx
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Button, Typography, Spin, message, Popconfirm, Empty, Space, Tag, Statistic } from 'antd';
+import { Row, Col, Card, Button, Typography, Spin, message, Popconfirm, Empty, Tag, Statistic } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons'; // ✅ Dùng lucide-react
 import { getFarms, createFarm, updateFarm, deleteFarm } from '../api/farmService';
 import type { Farm, FarmFormData } from '../types/farm';
